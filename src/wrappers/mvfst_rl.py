@@ -15,7 +15,7 @@ from helpers import utils
 
 
 def setup_mvfst(cc_repo):
-    cmd = [path.join(cc_repo, 'setup.sh'), '--inference']
+    cmd = '{} --inference'.format(path.join(cc_repo, 'setup.sh'))
     check_call(cmd, shell=True, cwd=path.join(cc_repo))
 
 
