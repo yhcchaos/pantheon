@@ -46,7 +46,7 @@ def main():
             '--host=%s' % args.ip,
             '--port=%s' % args.port,
             '--cc_algo=copa',
-        ] + args.extra_args.split()
+        ]
         check_call(cmd)
         return
 

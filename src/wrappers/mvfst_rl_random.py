@@ -55,7 +55,7 @@ def main():
             '--host=%s' % args.ip,
             '--port=%s' % args.port,
             '--cc_algo=cubic',
-        ] + args.extra_args.split()
+        ]
         check_call(cmd)
         return
 

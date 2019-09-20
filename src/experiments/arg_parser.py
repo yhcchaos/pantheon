@@ -109,6 +109,9 @@ def parse_test_shared(local, remote, config_args):
         mode.add_argument(
             '--pkill-cleanup', action='store_true', help='clean up using pkill'
             ' (send SIGKILL when necessary) if there were errors during tests')
+        mode.add_argument('--extra-sender-args',
+                          metavar='--arg1=val1 --arg2=val2...', default='',
+                          help='extra arguments to pass to sender wrapper')
 
 
 def parse_test_local(local):

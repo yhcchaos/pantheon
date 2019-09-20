@@ -30,6 +30,7 @@ class Test(object):
         self.run_id = run_id
         self.cc = cc
         self.data_dir = path.abspath(args.data_dir)
+        self.extra_sender_args = args.extra_sender_args
 
         # shared arguments between local and remote modes
         self.flows = args.flows
@@ -424,8 +425,8 @@ class Test(object):
 
             first_cmd = 'tunnel %s python %s receiver %s\n' % (
                 tun_id, first_src, port)
-            second_cmd = 'tunnel %s python %s sender %s %s\n' % (
-                tun_id, second_src, recv_pri_ip, port)
+            second_cmd = 'tunnel %s python %s sender %s %s --extra_args=%s\n' % (
+                tun_id, second_src, recv_pri_ip, port, self.extra_sender_args)
 
             recv_manager.stdin.write(first_cmd)
             recv_manager.stdin.flush()
@@ -438,8 +439,8 @@ class Test(object):
 
             port = utils.get_open_port()
 
-            first_cmd = 'tunnel %s python %s sender %s\n' % (
-                tun_id, first_src, port)
+            first_cmd = 'tunnel %s python %s sender %s --extra_args=%s\n' % (
+                tun_id, first_src, port, self.extra_sender_args)
             second_cmd = 'tunnel %s python %s receiver %s %s\n' % (
                 tun_id, second_src, send_pri_ip, port)
 
