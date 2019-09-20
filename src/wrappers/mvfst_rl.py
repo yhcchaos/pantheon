@@ -19,6 +19,25 @@ def setup_mvfst(cc_repo):
     check_call(cmd, shell=True, cwd=path.join(cc_repo))
 
 
+def get_test_cc_env_args(cc_repo):
+    model_file = path.join(cc_repo, 'models', 'traced_model.pt')
+    flags_file = path.join(cc_repo, 'models', 'traced_model.flags.pkl')
+
+    cc_env_args = []
+    if path.exists(model_file):
+        cc_env_args = ['--cc_env_model_file={}'.format(model_file)]
+
+    if path.exists(flags_file):
+        with open(flags_file, 'rb') as f:
+            obj = pkl.load(f)
+            assert isinstance(obj, dict)
+            for k, v in obj.iteritems():
+                if k.startswith('cc_env'):
+                    cc_env_args.append('--{}={}'.format(k, v))
+
+    return cc_env_args
+
+
 def main():
     args = arg_parser.sender_first()
 
@@ -30,24 +49,20 @@ def main():
         return
 
     if args.option == 'sender':
-        directory = path.join(cc_repo, 'models')
-        cc_env_args = [
-            '--cc_env_model_file=%s' % path.join(directory, "traced_model.pt"),
-        ]
-        with open(path.join(directory, 'traced_model.flags.pkl'), "rb") as f:
-            obj = pkl.load(f)
-            assert isinstance(obj, dict)
-            for k, v in obj.iteritems():
-                if k.startswith("cc_env"):
-                    option = "--{}={}".format(k, v)
-                    cc_env_args.append(option)
+        # If --extra_args is set, then we are in train mode.
+        # Otherwise, load flags from pkl file.
+        if args.extra_args:
+            cc_env_args = args.extra_args.split()
+        else:
+            cc_env_args = get_test_cc_env_args(cc_repo)
+
         cmd = [
             src,
             '--mode=server',
             '--host=0.0.0.0',  # Server listens on 0.0.0.0
             '--port=%s' % args.port,
             '--cc_algo=rl',
-        ] + args.extra_args.split() + cc_env_args
+        ] + cc_env_args
         check_call(cmd)
         return
 
@@ -68,4 +83,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
