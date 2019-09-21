@@ -31,6 +31,10 @@ def get_test_cc_env_args(cc_repo):
         with open(flags_file, 'rb') as f:
             obj = pkl.load(f)
             assert isinstance(obj, dict)
+
+            # Override to local mode for testing
+            obj['cc_env_mode'] = 'local'
+
             for k, v in obj.iteritems():
                 if k.startswith('cc_env'):
                     cc_env_args.append('--{}={}'.format(k, v))
