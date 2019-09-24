@@ -18,6 +18,32 @@ def setup_mvfst(cc_repo):
     cmd = '{} --inference'.format(path.join(cc_repo, 'setup.sh'))
     check_call(cmd, shell=True, cwd=path.join(cc_repo))
 
+def dependencies_mvfst():
+    # We use unzip and wget when installing torch
+    our_dependencies = "unzip wget"
+
+    # This is the list in https://github.com/facebookincubator/mvfst/blob/master/build_helper.sh
+    linux_mvfst_dependencies = " ".join([
+        "g++",
+        "cmake",
+        "libboost-all-dev",
+        "libevent-dev",
+        "libdouble-conversion-dev",
+        "libgoogle-glog-dev",
+        "libgflags-dev",
+        "libiberty-dev",
+        "liblz4-dev",
+        "liblzma-dev",
+        "libsnappy-dev",
+        "make",
+        "zlib1g-dev",
+        "binutils-dev",
+        "libjemalloc-dev",
+        "libssl-dev",
+        "pkg-config",
+        "libsodium-dev",
+        ])
+    print("{} {}".format(our_dependencies, linux_mvfst_dependencies))
 
 def get_test_cc_env_args(cc_repo):
     model_file = path.join(cc_repo, 'models', 'traced_model.pt')
@@ -47,6 +73,10 @@ def main():
 
     cc_repo = path.join(context.third_party_dir, 'mvfst-rl')
     src = path.join(cc_repo, '_build/build/traffic_gen/traffic_gen')
+
+    if args.option == 'deps':
+        dependencies_mvfst()
+        return
 
     if args.option == 'setup':
         setup_mvfst(cc_repo)
