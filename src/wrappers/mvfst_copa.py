@@ -12,17 +12,17 @@ import arg_parser
 import context
 from helpers import utils
 
-
-def setup_mvfst(cc_repo):
-    cmd = '{} --inference'.format(path.join(cc_repo, 'setup.sh'))
-    check_call(cmd, shell=True, cwd=path.join(cc_repo))
-
+from mvfst_rl import setup_mvfst, dependencies_mvfst
 
 def main():
     args = arg_parser.sender_first()
 
     cc_repo = path.join(context.third_party_dir, 'mvfst-rl')
     src = path.join(cc_repo, '_build/build/traffic_gen/traffic_gen')
+
+    if args.option == 'deps':
+        dependencies_mvfst()
+        return
 
     if args.option == 'setup':
         setup_mvfst(cc_repo)
