@@ -279,6 +279,10 @@ class Test(object):
             if 'tunnel manager is running' in running:
                 sys.stderr.write(running)
                 break
+            if not running:
+                sys.stderr.write('WARNING: tunnel server manager terminated '
+                                 'unexpectedly\n')
+                return None, None
 
         ts_manager.stdin.write('prompt [tsm]\n')
         ts_manager.stdin.flush()
@@ -294,6 +298,8 @@ class Test(object):
             tc_manager_cmd = self.mm_cmd + ['python', self.tunnel_manager]
 
         sys.stderr.write('[tunnel client manager (tcm)] ')
+        # NB: using `preexec_fn=os.setsid` creates a new process group, so that
+        # it is easy to kill all associated child processes afterwards.
         self.tc_manager = Popen(tc_manager_cmd, stdin=PIPE, stdout=PIPE,
                                 preexec_fn=os.setsid)
         tc_manager = self.tc_manager
@@ -303,6 +309,10 @@ class Test(object):
             if 'tunnel manager is running' in running:
                 sys.stderr.write(running)
                 break
+            if not running:
+                sys.stderr.write('WARNING: tunnel client manager terminated '
+                                 'unexpectedly\n')
+                return ts_manager, None
 
         tc_manager.stdin.write('prompt [tcm]\n')
         tc_manager.stdin.flush()
@@ -532,6 +542,10 @@ class Test(object):
     def run_with_tunnel(self):
         # run pantheon tunnel server and client managers
         ts_manager, tc_manager = self.run_tunnel_managers()
+        if ts_manager is None or tc_manager is None:
+            sys.stderr.write('Unable to run tunnel client or server manager '
+                             '=> aborting\n')
+            return False
 
         # create alias for ts_manager and tc_manager using sender or receiver
         if self.sender_side == self.server_side:
