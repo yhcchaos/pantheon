@@ -14,8 +14,8 @@ def main():
     plot = path.join(analysis_dir, 'plot.py')
     report = path.join(analysis_dir, 'report.py')
 
-    plot_cmd = ['python', plot]
-    report_cmd = ['python', report]
+    plot_cmd = ['python2', plot]
+    report_cmd = ['python2', report]
 
     for cmd in [plot_cmd, report_cmd]:
         if args.data_dir:
