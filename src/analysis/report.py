@@ -4,6 +4,7 @@ import sys
 import os
 from os import path
 import re
+import shutil
 import uuid
 import numpy as np
 
@@ -329,7 +330,7 @@ class Report(object):
 
         pdf_src_path = path.join(utils.tmp_dir, 'pantheon_report_%s.pdf' % report_uid)
         pdf_dst_path = path.join(self.data_dir, 'pantheon_report.pdf')
-        os.rename(pdf_src_path, pdf_dst_path)
+        shutil.move(pdf_src_path, pdf_dst_path)
 
         sys.stderr.write(
             'Saved pantheon_report.pdf in %s\n' % self.data_dir)

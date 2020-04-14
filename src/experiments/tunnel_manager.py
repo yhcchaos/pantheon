@@ -30,6 +30,12 @@ def main():
     while True:
         input_cmd = sys.stdin.readline().strip()
 
+        if not input_cmd:
+            # This may only happen if the parent process has died.
+            sys.stderr.write('tunnel manager\'s parent process must have died '
+                             '=> halting\n')
+            input_cmd = 'halt'
+
         # print all the commands fed into tunnel manager
         if prompt:
             sys.stderr.write(prompt + ' ')
