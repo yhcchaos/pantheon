@@ -71,6 +71,10 @@ schemes:
     name: mvfst-rl
     color: chocolate
     marker: 'P'
+  mvfst_rl_fixed:
+    name: mvfst-rl-fixed
+    color: chartreuse
+    marker: '2'
   mvfst_rl_random:
     name: mvfst-rl-random
     color: rosybrown
