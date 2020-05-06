@@ -246,9 +246,10 @@ class Plot(object):
                 continue
 
             value = data[cc]
-            cc_name = schemes_config[cc]['name']
-            color = schemes_config[cc]['color']
-            marker = schemes_config[cc]['marker']
+            cc_name = utils.get_scheme_name(cc, schemes_config)
+            cc_base = utils.get_base_scheme(cc)
+            color = schemes_config[cc_base]['color']
+            marker = schemes_config[cc_base]['marker']
             y_data, x_data = zip(*value)
 
             # update min and max raw delay
