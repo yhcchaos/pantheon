@@ -2,6 +2,7 @@
 
 import os
 from os import path
+import copy
 import sys
 import time
 import uuid
@@ -9,7 +10,7 @@ import random
 import signal
 import traceback
 from subprocess import PIPE
-from collections import namedtuple
+from collections import namedtuple, OrderedDict
 
 import arg_parser
 import context
@@ -28,7 +29,12 @@ class Test(object):
     def __init__(self, args, run_id, cc):
         self.mode = args.mode
         self.run_id = run_id
+        # We keep two versions of `cc`:
+        #   * `cc` is the full version including parameters
+        #   * `cc_base` is the base scheme name only
         self.cc = cc
+        self.cc_base = utils.get_base_scheme(cc)
+
         self.data_dir = path.abspath(args.data_dir)
         self.extra_sender_args = args.extra_sender_args
 
@@ -81,7 +87,9 @@ class Test(object):
             self.test_config = args.test_config
 
         if self.test_config is not None:
-            self.cc = self.test_config['test-name']
+            # Parameterized schemes are not supported when using a test config,
+            # so `cc` and `cc_base` are always equal.
+            self.cc = self.cc_base = self.test_config['test-name']
             self.flow_objs = {}
             cc_src_remote_dir = ''
             if self.mode == 'remote':
@@ -187,13 +195,13 @@ class Test(object):
 
     def setup(self):
         # setup commonly used paths
-        self.cc_src = path.join(context.src_dir, 'wrappers', self.cc + '.py')
+        self.cc_src = path.join(context.src_dir, 'wrappers', self.cc_base + '.py')
         self.tunnel_manager = path.join(context.src_dir, 'experiments',
                                         'tunnel_manager.py')
 
         # record who runs first
         if self.test_config is None:
-            self.run_first, self.run_second = utils.who_runs_first(self.cc)
+            self.run_first, self.run_second = utils.who_runs_first(self.cc_base)
         else:
             self.run_first = None
             self.run_second = None
@@ -764,22 +772,25 @@ def run_tests(args):
                                         getattr(args, 'remote_path', None))
 
     # get cc_schemes
+    cc_schemes = OrderedDict()
     if args.all:
         config = utils.parse_config()
         schemes_config = config['schemes']
 
-        cc_schemes = schemes_config.keys()
+        for scheme in schemes_config.keys():
+            cc_schemes[scheme] = {}
         if args.random_order:
-            random.shuffle(cc_schemes)
+            utils.shuffle_keys(cc_schemes)
     elif args.schemes is not None:
-        cc_schemes = args.schemes.split()
+        cc_schemes = utils.parse_schemes(args.schemes)
         if args.random_order:
-            random.shuffle(cc_schemes)
+            utils.shuffle_keys(cc_schemes)
     else:
         assert(args.test_config is not None)
         if args.random_order:
             random.shuffle(args.test_config['flows'])
-        cc_schemes = [flow['scheme'] for flow in args.test_config['flows']]
+        for flow in args.test_config['flows']:
+            cc_schemes[flow['scheme']] = {}
 
     # save metadata
     meta = vars(args).copy()
@@ -793,10 +804,52 @@ def run_tests(args):
     for run_id in xrange(args.start_run_id,
                          args.start_run_id + args.run_times):
         if not hasattr(args, 'test_config') or args.test_config is None:
-            for cc in cc_schemes:
-                Test(args, run_id, cc).run()
+            for cc, params in cc_schemes.iteritems():
+                test_args = get_cc_args(args, params)
+                Test(test_args, run_id, cc).run()
         else:
             Test(args, run_id, None).run()
+
+
+def get_cc_args(args, params):
+    """
+    Obtain experiment-specific arguments and original cc scheme name.
+
+    :param args: Original arguments
+    :param params: Dictionary holding this experiment's specific params as
+        strings, e.g. {"cc_env_fixed_cwnd": "100"}
+    :return: An updated version of `args` with overridden params' values
+        (`args` is *not* modified in-place: either we return it unchanged,
+        or a copy is made before any modification)
+    """
+    if params:
+        # Override default params with scheme-specific ones.
+        args = copy.deepcopy(args)
+        for param, val in params.iteritems():
+            if hasattr(args, param):
+                # This is a direct parameter to this script: we assume that we
+                # can use the type of the default setting value to cast the
+                # string `val` into the desired type.
+                cast_func = type(getattr(args, param))
+                setattr(args, param, cast_func(param))
+            else:
+                # This must be an indirect parameter passed through `--extra-sender-args`:
+                # modify this string to use the desired value instead of current one.
+                extra = args.extra_sender_args
+                pattern = '--{}='.format(param)
+                pattern_pos = extra.find(pattern)
+                assert pattern_pos >= 0, (
+                    'pattern not found in --extra-sender-args: {}'.format(pattern))
+                next_pos = extra.find(' ', pattern_pos)  # when next param starts
+                if next_pos == -1:  # will happen if `param` is the last parameter
+                    next_pos = len(extra)
+                # Build the new string of extra args.
+                args.extra_sender_args = ''.join([
+                    extra[0:pattern_pos + len(pattern)],  # up to param's value
+                    val,  # the new value of `param` (already a string)
+                    extra[next_pos:],  # after `param`
+                ])
+    return args
 
 
 def pkill(args):

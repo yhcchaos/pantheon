@@ -152,7 +152,7 @@ class Report(object):
             table += (
                 '%(name)s & %(valid_runs)s & %(flow_tputs)s & '
                 '%(flow_delays)s & %(flow_losses)s \\\\\n'
-            ) % {'name': data[cc]['name'],
+            ) % {'name': data[cc]['name'].replace('{', '\\{').replace('}', '\\}'),
                  'valid_runs': data[cc]['valid_runs'],
                  'flow_tputs': ' & '.join(flow_data['tput']),
                  'flow_delays': ' & '.join(flow_data['delay']),
@@ -177,7 +177,7 @@ class Report(object):
             data[cc] = {}
             data[cc]['valid_runs'] = 0
 
-            cc_name = self.config['schemes'][cc]['name']
+            cc_name = utils.get_scheme_name(cc, self.config['schemes'])
             cc_name = cc_name.strip().replace('_', '\\_')
             data[cc]['name'] = cc_name
 
@@ -267,7 +267,7 @@ class Report(object):
         cc_id = 0
         for cc in self.cc_schemes:
             cc_id += 1
-            cc_name = self.config['schemes'][cc]['name']
+            cc_name = utils.get_scheme_name(cc, self.config['schemes'])
             cc_name = cc_name.strip().replace('_', '\\_')
 
             for run_id in xrange(1, 1 + self.run_times):

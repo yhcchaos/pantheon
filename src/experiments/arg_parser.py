@@ -8,7 +8,7 @@ from helpers import utils
 
 
 def verify_schemes(schemes):
-    schemes = schemes.split()
+    schemes = map(utils.get_base_scheme, utils.parse_schemes(schemes))
     all_schemes = utils.parse_config()['schemes'].keys()
 
     for cc in schemes:
