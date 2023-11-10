@@ -34,7 +34,7 @@ class Test(object):
         #   * `cc_base` is the base scheme name only
         self.cc = cc
         self.cc_base = utils.get_base_scheme(cc)
-
+        self.do_log = args.do_log
         self.data_dir = path.abspath(args.data_dir)
         self.extra_sender_args = args.extra_sender_args
 
@@ -136,8 +136,9 @@ class Test(object):
             self.mm_cmd += self.prepend_mm_cmds.split()
 
         self.mm_cmd += [
-            'mm-link', uplink_trace, downlink_trace,
-            '--uplink-log=' + uplink_log,
+            'mm-link', uplink_trace, downlink_trace]
+        if(self.do_log):
+            self.mm_cmd += ['--uplink-log=' + uplink_log,
             '--downlink-log=' + downlink_log]
 
         if self.extra_mm_link_args:
@@ -328,14 +329,17 @@ class Test(object):
         return ts_manager, tc_manager
 
     def run_tunnel_server(self, tun_id, ts_manager):
+        ts_cmd = 'mm-tunnelserver'
         if self.server_side == self.sender_side:
-            ts_cmd = 'mm-tunnelserver --ingress-log=%s --egress-log=%s' % (
-                self.acklink_ingress_logs[tun_id],
-                self.datalink_egress_logs[tun_id])
+            if(self.do_log):
+                ts_cmd += ' --ingress-log=%s --egress-log=%s' % (
+                    self.acklink_ingress_logs[tun_id],
+                    self.datalink_egress_logs[tun_id])
         else:
-            ts_cmd = 'mm-tunnelserver --ingress-log=%s --egress-log=%s' % (
-                self.datalink_ingress_logs[tun_id],
-                self.acklink_egress_logs[tun_id])
+            if(self.do_log):
+                ts_cmd = ' --ingress-log=%s --egress-log=%s' % (
+                    self.datalink_ingress_logs[tun_id],
+                    self.acklink_egress_logs[tun_id])
 
         if self.mode == 'remote':
             if self.server_side == 'remote':
@@ -367,17 +371,17 @@ class Test(object):
                 cmd_to_run_tc[1] = self.local_addr
 
         cmd_to_run_tc_str = ' '.join(cmd_to_run_tc)
-
+        ts_cmd = cmd_to_run_tc_str
         if self.server_side == self.sender_side:
-            tc_cmd = '%s --ingress-log=%s --egress-log=%s' % (
-                cmd_to_run_tc_str,
-                self.datalink_ingress_logs[tun_id],
-                self.acklink_egress_logs[tun_id])
+            if(self.do_log):
+                tc_cmd += ' --ingress-log=%s --egress-log=%s' % (
+                    self.datalink_ingress_logs[tun_id],
+                    self.acklink_egress_logs[tun_id])
         else:
-            tc_cmd = '%s --ingress-log=%s --egress-log=%s' % (
-                cmd_to_run_tc_str,
-                self.acklink_ingress_logs[tun_id],
-                self.datalink_egress_logs[tun_id])
+            if(self.do_log):
+                tc_cmd = ' --ingress-log=%s --egress-log=%s' % (
+                    self.acklink_ingress_logs[tun_id],
+                    self.datalink_egress_logs[tun_id])
 
         if self.mode == 'remote':
             if self.server_side == 'remote':
@@ -599,7 +603,8 @@ class Test(object):
         tc_manager.stdin.flush()
 
         # process tunnel logs
-        self.process_tunnel_logs()
+        if(self.do_log):
+            self.process_tunnel_logs()
 
         return True
 
