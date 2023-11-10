@@ -54,7 +54,3 @@
 	path = third_party/fillp-sheep
 	url = https://github.com/fillthepipe/fillp-sheep.git
 	ignore = dirty
-[submodule "third_party/mvfst-rl"]
-	path = third_party/mvfst-rl
-	url = https://github.com/facebookresearch/mvfst-rl
-	ignore = dirty
