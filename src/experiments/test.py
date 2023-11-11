@@ -371,7 +371,7 @@ class Test(object):
                 cmd_to_run_tc[1] = self.local_addr
 
         cmd_to_run_tc_str = ' '.join(cmd_to_run_tc)
-        ts_cmd = cmd_to_run_tc_str
+        tc_cmd = cmd_to_run_tc_str
         if self.server_side == self.sender_side:
             if(self.do_log):
                 tc_cmd += ' --ingress-log=%s --egress-log=%s' % (
