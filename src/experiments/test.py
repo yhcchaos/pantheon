@@ -337,7 +337,7 @@ class Test(object):
                     self.datalink_egress_logs[tun_id])
         else:
             if(self.do_log):
-                ts_cmd = ' --ingress-log=%s --egress-log=%s' % (
+                ts_cmd += ' --ingress-log=%s --egress-log=%s' % (
                     self.datalink_ingress_logs[tun_id],
                     self.acklink_egress_logs[tun_id])
 
@@ -379,7 +379,7 @@ class Test(object):
                     self.acklink_egress_logs[tun_id])
         else:
             if(self.do_log):
-                tc_cmd = ' --ingress-log=%s --egress-log=%s' % (
+                tc_cmd += ' --ingress-log=%s --egress-log=%s' % (
                     self.acklink_ingress_logs[tun_id],
                     self.datalink_egress_logs[tun_id])
 

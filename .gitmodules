@@ -22,10 +22,6 @@
 	path = third_party/sprout
 	url = https://github.com/keithw/sprout.git
 	ignore = dirty
-[submodule "third_party/pantheon-tunnel"]
-	path = third_party/pantheon-tunnel
-	url = https://github.com/StanfordSNR/pantheon-tunnel.git
-	ignore = dirty
 [submodule "third_party/genericCC"]
 	path = third_party/genericCC
 	url = https://github.com/venkatarun95/genericCC
@@ -54,3 +50,6 @@
 	path = third_party/fillp-sheep
 	url = https://github.com/fillthepipe/fillp-sheep.git
 	ignore = dirty
+[submodule "third_party/pantheon_tunnel"]
+	path = third_party/pantheon_tunnel
+	url = git@github.com:yhcchaos/pantheon_tunnel.git
