@@ -24,10 +24,10 @@ def parse_arguments():
         '-o', action='store', metavar='OUTPUT-LOG', dest='output_log',
         required=True, help='tunnel log after merging')
     single_parser.add_argument(
-        '-i-clock-offset', metavar='MS', type=float,
+        '-i-clock-offset', metavar='MS', type=int,
         help='clock offset on the end where ingress log is saved')
     single_parser.add_argument(
-        '-e-clock-offset', metavar='MS', type=float,
+        '-e-clock-offset', metavar='MS', type=int,
         help='clock offset on the end where egress log is saved')
 
     # subparser for multiple mode
@@ -48,7 +48,7 @@ def parse_arguments():
 
 def parse_line(line):
     (ts, uid, size) = line.split('-')
-    return (float(ts), int(uid), int(size))
+    return (int(ts), int(uid), int(size))
 
 
 def single_mode(args):
@@ -61,7 +61,7 @@ def single_mode(args):
     if not line:
         sys.exit('Warning: egress log is empty\n')
 
-    send_init_ts = float(line.rsplit(':', 1)[-1])
+    send_init_ts = int(line.rsplit(':', 1)[-1])
     if args.e_clock_offset is not None:
         send_init_ts += args.e_clock_offset
 
@@ -72,14 +72,14 @@ def single_mode(args):
     if not line:
         sys.exit('Warning: ingress log is empty\n')
 
-    recv_init_ts = float(line.rsplit(':', 1)[-1])
+    recv_init_ts = int(line.rsplit(':', 1)[-1])
     if args.i_clock_offset is not None:
         recv_init_ts += args.i_clock_offset
 
     if recv_init_ts < min_init_ts:
         min_init_ts = recv_init_ts
 
-    output_log.write('# init timestamp: %.3f\n' % min_init_ts)
+    output_log.write('# init timestamp: {}\n'.format(min_init_ts))
 
     # timestamp calibration to ensure non-negative timestamps
     send_cal = send_init_ts - min_init_ts
@@ -110,7 +110,7 @@ def single_mode(args):
             recv_ts_cal = recv_ts + recv_cal
 
         if (send_l and recv_l and send_ts_cal <= recv_ts_cal) or not recv_l:
-            output_log.write('%.3f + %s\n' % (send_ts_cal, send_size))
+            output_log.write('{} + {}\n'.format(send_ts_cal, send_size))
             send_l = send_log.readline()
             if send_l:
                 (send_ts, send_uid, send_size) = parse_line(send_l)
@@ -129,8 +129,7 @@ def single_mode(args):
                          'uid %s\n' % recv_uid)
 
             delay = recv_ts_cal - paired_send_ts
-            output_log.write('%.3f - %s %.3f\n'
-                             % (recv_ts_cal, recv_size, delay))
+            output_log.write('{} - {} {}\n'.format(recv_ts_cal, recv_size, delay))
             recv_l = recv_log.readline()
             if recv_l:
                 (recv_ts, recv_uid, recv_size) = parse_line(recv_l)
@@ -161,9 +160,9 @@ def push_to_heap(heap, index, log_file, init_ts_delta):
 
     if line:
         line_list = line.strip().split()
-        calibrated_ts = float(line_list[0]) + init_ts_delta
+        calibrated_ts = int(line_list[0]) + init_ts_delta
 
-        line_list[0] = '%.3f' % calibrated_ts
+        line_list[0] = str(calibrated_ts)
         if line_list[1] == '#':
             line_list[2] = str(int(line_list[2]) - 4)
         line = ' '.join(line_list)
@@ -196,7 +195,7 @@ def multiple_mode(args):
             if not line.startswith('# init timestamp'):
                 continue
 
-            link_init_ts = float(line.split(':')[1])
+            link_init_ts = int(line.split(':')[1])
             min_init_ts = link_init_ts
             break
     else:
@@ -213,7 +212,7 @@ def multiple_mode(args):
             if not line.startswith('# init timestamp'):
                 continue
 
-            init_ts = float(line.split(':')[1])
+            init_ts = int(line.split(':')[1])
             init_ts_delta.append(init_ts)
             if init_ts < min_init_ts:
                 min_init_ts = init_ts
@@ -225,7 +224,7 @@ def multiple_mode(args):
     for i in xrange(len(init_ts_delta)):
         init_ts_delta[i] -= min_init_ts
 
-    output_log.write('# init timestamp: %.3f\n' % min_init_ts)
+    output_log.write('# init timestamp: {}\n'.format(min_init_ts))
 
     # build the min heap
     if link_log:

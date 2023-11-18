@@ -18,10 +18,13 @@ class TunnelGraph(object):
         self.throughput_graph = throughput_graph
         self.delay_graph = delay_graph
         self.ms_per_bin = ms_per_bin
-
+    '''
     def ms_to_bin(self, ts, first_ts):
         return int((ts - first_ts) / self.ms_per_bin)
-
+    '''
+    def us_to_bin(self, ts, first_ts):
+        return int((ts - first_ts) / self.ms_per_bin / 1000)
+    
     def bin_to_s(self, bin_id):
         return bin_id * self.ms_per_bin / 1000.0
 
@@ -65,8 +68,9 @@ class TunnelGraph(object):
             if first_ts is None:
                 first_ts = ts
 
-            bin_id = self.ms_to_bin(ts, first_ts)
-
+            #bin_id = self.ms_to_bin(ts, first_ts)
+            bin_id = self.us_to_bin(ts, first_ts)
+            
             if event_type == '#':
                 capacities[bin_id] = capacities.get(bin_id, 0) + num_bits
 
@@ -132,8 +136,10 @@ class TunnelGraph(object):
                 if flow_id not in self.delays:
                     self.delays[flow_id] = []
                     self.delays_t[flow_id] = []
-                self.delays[flow_id].append(delay)
-                self.delays_t[flow_id].append((ts - first_ts) / 1000.0)
+                #self.delays[flow_id].append(delay)
+                self.delays[flow_id].append(delay / 1000.0) #ms->us
+                #self.delays_t[flow_id].append((ts - first_ts) / 1000.0)
+                self.delays_t[flow_id].append((ts - first_ts) / 1000000.0) #ms->us
 
         tunlog.close()
 
@@ -147,7 +153,8 @@ class TunnelGraph(object):
             if last_capacity == first_capacity:
                 self.avg_capacity = 0
             else:
-                delta = 1000.0 * (last_capacity - first_capacity)
+                #delta = 1000.0 * (last_capacity - first_capacity)
+                delta = last_capacity - first_capacity # ms->us
                 self.avg_capacity = sum(capacities.values()) / delta
 
             # transform capacities into a list
@@ -185,7 +192,8 @@ class TunnelGraph(object):
                 if last_arrival_ts == first_arrival_ts:
                     self.avg_ingress[flow_id] = 0
                 else:
-                    delta = 1000.0 * (last_arrival_ts - first_arrival_ts)
+                    #delta = 1000.0 * (last_arrival_ts - first_arrival_ts)
+                    delta = last_arrival_ts - first_arrival_ts #ms->us
                     flow_arrivals = sum(arrivals[flow_id].values())
                     self.avg_ingress[flow_id] = flow_arrivals / delta
 
@@ -202,7 +210,8 @@ class TunnelGraph(object):
                 if last_departure_ts == first_departure_ts:
                     self.avg_egress[flow_id] = 0
                 else:
-                    delta = 1000.0 * (last_departure_ts - first_departure_ts)
+                    #delta = 1000.0 * (last_departure_ts - first_departure_ts)
+                    delta = last_departure_ts - first_departure_ts #ms->us
                     flow_departures = sum(departures[flow_id].values())
                     self.avg_egress[flow_id] = flow_departures / delta
 
@@ -244,9 +253,10 @@ class TunnelGraph(object):
             self.total_avg_egress = 0
         else:
             self.total_duration = total_last_departure - total_first_departure
-            self.total_avg_egress = total_departures / (
-                1000.0 * self.total_duration)
-
+            #self.total_avg_egress = total_departures / (
+            #    1000.0 * self.total_duration)
+            self.total_avg_egress = total_departures / self.total_duration #ms->us
+            
         self.total_percentile_delay = None
         if total_delays:
             self.total_percentile_delay = np.percentile(

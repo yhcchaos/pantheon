@@ -432,7 +432,7 @@ class Test(object):
 
     def run_first_side(self, tun_id, send_manager, recv_manager,
                        send_pri_ip, recv_pri_ip):
-
+        extra_args = self.extra_sender_args[:-1] + " --cc_env_flow_id={}\"".format(tun_id)
         first_src = self.cc_src
         second_src = self.cc_src
 
@@ -448,7 +448,7 @@ class Test(object):
             first_cmd = 'tunnel %s python %s receiver %s\n' % (
                 tun_id, first_src, port)
             second_cmd = 'tunnel %s python %s sender %s %s --extra_args=%s\n' % (
-                tun_id, second_src, recv_pri_ip, port, self.extra_sender_args)
+                tun_id, second_src, recv_pri_ip, port, extra_args)
 
             recv_manager.stdin.write(first_cmd)
             recv_manager.stdin.flush()
@@ -462,7 +462,7 @@ class Test(object):
             port = utils.get_open_port()
 
             first_cmd = 'tunnel %s python %s sender %s --extra_args=%s\n' % (
-                tun_id, first_src, port, self.extra_sender_args)
+                tun_id, first_src, port, extra_args)
             second_cmd = 'tunnel %s python %s receiver %s %s\n' % (
                 tun_id, second_src, send_pri_ip, port)
 
@@ -677,7 +677,7 @@ class Test(object):
 
             cmd = [merge_tunnel_logs, 'single',
                    '-i', self.datalink_ingress_logs[tun_id],
-                   '-e', self.datalink_egress_logs[tun_id],
+                   '-e', self.datalink_egress_logs[tun_id], #mm-tunnleclient --egress-log
                    '-o', datalink_tun_log]
             if apply_ofst:
                 cmd += ['-i-clock-offset', data_i_ofst,
