@@ -7,7 +7,7 @@ import itertools
 import numpy as np
 import matplotlib_agg
 import matplotlib.pyplot as plt
-import logging
+
 import arg_parser
 
 
@@ -46,8 +46,6 @@ class TunnelGraph(object):
 
         total_first_departure = None
         total_last_departure = None
-        total_first_arrival = None
-        total_last_arrival = None
         total_arrivals = 0
         total_departures = 0
 
@@ -99,13 +97,6 @@ class TunnelGraph(object):
                 arrivals[flow_id][bin_id] = old_value + num_bits
 
                 total_arrivals += num_bits
-                
-                if total_first_arrival is None:
-                    total_first_arrival = ts
-                if (total_last_arrival is None or
-                        ts > total_last_arrival):
-                    total_last_arrival = ts
-                    
             elif event_type == '-':
                 if len(items) == 5:
                     flow_id = int(items[-1])
@@ -174,7 +165,6 @@ class TunnelGraph(object):
         self.avg_ingress = {}
         self.avg_egress = {}
         self.percentile_delay = {}
-        self.avg_delay = {}
         self.loss_rate = {}
 
         total_delays = []
@@ -233,11 +223,6 @@ class TunnelGraph(object):
                     self.delays[flow_id], 95, interpolation='nearest')
                 total_delays += self.delays[flow_id]
 
-            # calculate avg per-packet one-way delay
-            self.avg_delay[flow_id] = None
-            if flow_id in self.delays:
-                self.avg_delay[flow_id] = np.mean(self.delays[flow_id])
-                
             # calculate loss rate for each flow
             if flow_id in arrivals and flow_id in departures:
                 flow_arrivals = sum(arrivals[flow_id].values())
@@ -261,22 +246,11 @@ class TunnelGraph(object):
             self.total_duration = total_last_departure - total_first_departure
             self.total_avg_egress = total_departures / (
                 1000.0 * self.total_duration)
-            
-        self.total_avg_ingress = None
-        if total_first_arrival == total_last_arrival:
-            self.total_in_duration = 0
-            self.total_avg_ingress = 0
-        else:
-            self.total_in_duration = total_last_arrival - total_first_arrival
-            self.total_avg_ingress = total_arrivals / (
-                1000.0 * self.total_in_duration)
+
         self.total_percentile_delay = None
         if total_delays:
             self.total_percentile_delay = np.percentile(
                 total_delays, 95, interpolation='nearest')
-        self.total_avg_delay = None
-        if total_delays:
-            self.total_avg_delay = np.mean(total_delays)
 
     def flip(self, items, ncol):
         return list(itertools.chain(*[items[i::ncol] for i in range(ncol)]))
@@ -298,51 +272,42 @@ class TunnelGraph(object):
             if flow_id in self.ingress_tput and flow_id in self.ingress_t:
                 empty_graph = False
                 ax.plot(self.ingress_t[flow_id], self.ingress_tput[flow_id],
-                        label='%si(%.2f)'
+                        label='Flow %s ingress (mean %.2f Mbit/s)'
                         % (flow_id, self.avg_ingress.get(flow_id, 0)),
                         color=color, linestyle='dashed')
-            
+
             if flow_id in self.egress_tput and flow_id in self.egress_t:
                 empty_graph = False
                 ax.plot(self.egress_t[flow_id], self.egress_tput[flow_id],
-                        label='%se(%.2f)'
+                        label='Flow %s egress (mean %.2f Mbit/s)'
                         % (flow_id, self.avg_egress.get(flow_id, 0)),
                         color=color)
-            
+
             color_i += 1
             if color_i == len(colors):
                 color_i = 0
+
         if empty_graph:
             sys.stderr.write('No valid throughput graph is generated\n')
             return
-        
-        #ax.set_xlabel('Time (s)', fontsize=15)
-        #ax.set_ylabel('Throughput (Mbit/s)', fontsize=15)
-        ax.tick_params(axis='both', which='major', labelsize=20)
-        ax.annotate('(s)', (5, 0), textcoords="offset points", xytext=(0, -10), ha='center', color='r')
-        ax.annotate('(Mbit/s)', (0, 1.5), textcoords="offset points", xytext=(-30, 0), ha='center', color='r')
-        #if self.link_capacity and self.avg_capacity:
-            #ax.set_title('Average capacity %.2f Mbit/s (shaded region)'
-            #             % self.avg_capacity)
+
+        ax.set_xlabel('Time (s)', fontsize=12)
+        ax.set_ylabel('Throughput (Mbit/s)', fontsize=12)
+
+        if self.link_capacity and self.avg_capacity:
+            ax.set_title('Average capacity %.2f Mbit/s (shaded region)'
+                         % self.avg_capacity)
 
         ax.grid()
         handles, labels = ax.get_legend_handles_labels()
-        handles.append(ax.scatter([0], [0], color='white', label='sumi(%.2f)' % sum(self.avg_ingress.values())))
-        handles.append(ax.scatter([0], [0], color='white', label='sume(%.2f)' % sum(self.avg_egress.values())))
-        handles.append(ax.scatter([0], [0], color='white', label='avgi(%.2f)' % self.total_avg_ingress))
-        handles.append(ax.scatter([0], [0], color='white', label='avge(%.2f)' % self.total_avg_egress))
-        labels.extend( ['sumi%.2f' % sum(self.avg_ingress.values()), 'sume%.2f' % sum(self.avg_egress.values()), 
-                   'avgi%.2f' % self.total_avg_ingress, 'avge%.2f' % self.total_avg_egress])
-        lgd = ax.legend(self.flip(handles, 6), self.flip(labels, 6),
-                        scatterpoints=1, bbox_to_anchor=(0.5, -0.05),
-                        loc='upper center', ncol=6, fontsize=20,
-                        labelspacing=0, columnspacing=0.3, 
-                        handlelength=1, handletextpad=0)
+        lgd = ax.legend(self.flip(handles, 2), self.flip(labels, 2),
+                        scatterpoints=1, bbox_to_anchor=(0.5, -0.1),
+                        loc='upper center', ncol=2, fontsize=12)
 
         fig.set_size_inches(12, 6)
         fig.savefig(self.throughput_graph, bbox_extra_artists=(lgd,),
-                    bbox_inches='tight')
-    
+                    bbox_inches='tight', pad_inches=0.2)
+
     def plot_delay_graph(self):
         empty_graph = True
         fig, ax = plt.subplots()
@@ -358,7 +323,7 @@ class TunnelGraph(object):
 
                 ax.scatter(self.delays_t[flow_id], self.delays[flow_id], s=1,
                            color=color, marker='.',
-                           label='p%s(%.2f)'
+                           label='Flow %s (95th percentile %.2f ms)'
                            % (flow_id, self.percentile_delay.get(flow_id, 0)))
 
                 color_i += 1
@@ -370,33 +335,19 @@ class TunnelGraph(object):
             return
 
         ax.set_xlim(0, int(math.ceil(max_delay)))
-        #ax.set_xlabel('Time (s)', fontsize=15)
-        #ax.set_ylabel('one-way delay(ms)', fontsize=15)
-        ax.tick_params(axis='both', which='major', labelsize=20) 
-        ax.annotate('(s)', (5, 0), textcoords="offset points", xytext=(0, -10), ha='center', color='r')
-        ax.annotate('(95p-oneway-ms)', (0, 1.5), textcoords="offset points", xytext=(-30, 0), ha='center', color='r')
+        ax.set_xlabel('Time (s)', fontsize=12)
+        ax.set_ylabel('Per-packet one-way delay (ms)', fontsize=12)
+
         ax.grid()
-        handles_95p, labels_95p = ax.get_legend_handles_labels()
-        handles_avg = []
-        labels_avg = []
-        for flow_id in self.flows:
-            handles_avg.append(plt.Line2D([0], [0], color='white', label='a%s(%.2f)' % (flow_id, self.avg_delay.get(flow_id, 0))))
-            labels_avg.append('a%s(%.2f)' % (flow_id, self.avg_delay.get(flow_id, 0)))
-        handles = []
-        labels = []
-        for i in range(len(handles_95p)):
-            handles.append(handles_95p[i])
-            handles.append(handles_avg[i])
-            labels.append(labels_95p[i])
-            labels.append(labels_avg[i])
-        lgd = ax.legend(self.flip(handles, 6), self.flip(labels, 6),
-                        scatterpoints=1, bbox_to_anchor=(0.5, -0.05),
-                        loc='upper center', ncol=6, fontsize=20,
-                        markerscale=5, labelspacing=0, columnspacing=0.3, 
-                        handlelength=1, handletextpad=0)
+        handles, labels = ax.get_legend_handles_labels()
+        lgd = ax.legend(self.flip(handles, 3), self.flip(labels, 3),
+                        scatterpoints=1, bbox_to_anchor=(0.5, -0.1),
+                        loc='upper center', ncol=3, fontsize=12,
+                        markerscale=5, handletextpad=0)
+
         fig.set_size_inches(12, 6)
         fig.savefig(self.delay_graph, bbox_extra_artists=(lgd,),
-                    bbox_inches='tight')
+                    bbox_inches='tight', pad_inches=0.2)
 
     def statistics_string(self):
         if len(self.flows) == 1:
