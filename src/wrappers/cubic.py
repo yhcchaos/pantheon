@@ -9,7 +9,7 @@ def main():
     args = arg_parser.receiver_first()
 
     if args.option == 'deps':
-        print 'iperf'
+        print('iperf')
         return
 
     if args.option == 'receiver':
@@ -18,8 +18,7 @@ def main():
         return
 
     if args.option == 'sender':
-        cmd = ['iperf', '-Z', 'cubic', '-c', args.ip, '-p', args.port,
-               '-t', '75']
+        cmd = ['iperf', '-Z', 'cubic', '-c', args.ip, '-p', args.port]
         check_call(cmd)
         return
 

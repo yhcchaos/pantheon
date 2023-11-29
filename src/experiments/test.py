@@ -11,7 +11,6 @@ import signal
 import traceback
 from subprocess import PIPE
 from collections import namedtuple, OrderedDict
-
 import arg_parser
 import context
 from helpers import utils, kernel_ctl
@@ -37,7 +36,8 @@ class Test(object):
         self.do_log = args.do_log
         self.data_dir = path.abspath(args.data_dir)
         self.extra_sender_args = args.extra_sender_args
-
+        self.actor_id = args.actor_id
+        self.episode_id = args.episode_id
         # shared arguments between local and remote modes
         self.flows = args.flows
         self.runtime = args.runtime
@@ -136,7 +136,8 @@ class Test(object):
             self.mm_cmd += self.prepend_mm_cmds.split()
 
         self.mm_cmd += [
-            'mm-link', uplink_trace, downlink_trace]
+            'mm-link', uplink_trace, downlink_trace, 
+            '--actor_id='+str(self.actor_id), '--episode_id='+str(self.episode_id)]
         if(self.do_log):
             self.mm_cmd += ['--uplink-log=' + uplink_log,
             '--downlink-log=' + downlink_log]
@@ -432,7 +433,9 @@ class Test(object):
 
     def run_first_side(self, tun_id, send_manager, recv_manager,
                        send_pri_ip, recv_pri_ip):
-        extra_args = self.extra_sender_args[:-1] + " --cc_env_flow_id={}\"".format(tun_id)
+        extra_args = self.extra_sender_args
+        if extra_args:
+            extra_args = self.extra_sender_args[:-1] + " --cc_env_flow_id={}\"".format(tun_id)
         first_src = self.cc_src
         second_src = self.cc_src
 
@@ -447,9 +450,12 @@ class Test(object):
 
             first_cmd = 'tunnel %s python %s receiver %s\n' % (
                 tun_id, first_src, port)
-            second_cmd = 'tunnel %s python %s sender %s %s --extra_args=%s\n' % (
-                tun_id, second_src, recv_pri_ip, port, extra_args)
-
+            if extra_args:
+                second_cmd = 'tunnel %s python %s sender %s %s --extra_args=%s\n' % (
+                    tun_id, second_src, recv_pri_ip, port, extra_args)
+            else:
+                second_cmd = 'tunnel %s python %s sender %s %s\n' % (
+                    tun_id, second_src, recv_pri_ip, port)
             recv_manager.stdin.write(first_cmd)
             recv_manager.stdin.flush()
         elif self.run_first == 'sender':  # self.run_first == 'sender'
@@ -460,9 +466,12 @@ class Test(object):
                     first_src = self.r['cc_src']
 
             port = utils.get_open_port()
-
-            first_cmd = 'tunnel %s python %s sender %s --extra_args=%s\n' % (
-                tun_id, first_src, port, extra_args)
+            if(extra_args):
+                first_cmd = 'tunnel %s python %s sender %s --extra_args=%s\n' % (
+                    tun_id, first_src, port, extra_args)
+            else:
+                first_cmd = 'tunnel %s python %s sender %s\n' % (
+                    tun_id, first_src, port)
             second_cmd = 'tunnel %s python %s receiver %s %s\n' % (
                 tun_id, second_src, send_pri_ip, port)
 
@@ -804,12 +813,16 @@ def run_tests(args):
 
     metadata_path = path.join(args.data_dir, 'pantheon_metadata.json')
     utils.save_test_metadata(meta, metadata_path)
-
+    root_data_dir = args.data_dir
     # run tests
     for run_id in xrange(args.start_run_id,
                          args.start_run_id + args.run_times):
         if not hasattr(args, 'test_config') or args.test_config is None:
             for cc, params in cc_schemes.iteritems():
+                args.data_dir = os.path.join(root_data_dir, cc)
+                if not os.path.exists(args.data_dir):
+                    os.makedirs(args.data_dir)
+                # give this run and cc specific param to build link and run server and client
                 test_args = get_cc_args(args, params)
                 Test(test_args, run_id, cc).run()
         else:
@@ -830,13 +843,14 @@ def get_cc_args(args, params):
     if params:
         # Override default params with scheme-specific ones.
         args = copy.deepcopy(args)
+        # param must either in args or in extra_sender_args
         for param, val in params.iteritems():
             if hasattr(args, param):
                 # This is a direct parameter to this script: we assume that we
                 # can use the type of the default setting value to cast the
                 # string `val` into the desired type.
                 cast_func = type(getattr(args, param))
-                setattr(args, param, cast_func(param))
+                setattr(args, param, cast_func(val))
             else:
                 # This must be an indirect parameter passed through `--extra-sender-args`:
                 # modify this string to use the desired value instead of current one.

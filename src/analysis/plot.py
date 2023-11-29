@@ -80,7 +80,7 @@ class Plot(object):
 
         for link_t in link_directions:
             log_name = log_prefix + '_%s_run%s.log' % (link_t, run_id)
-            log_path = path.join(self.data_dir, log_name)
+            log_path = path.join(self.data_dir, cc, log_name)
 
             if not path.isfile(log_path):
                 sys.stderr.write('Warning: %s does not exist\n' % log_path)
@@ -92,10 +92,10 @@ class Plot(object):
                 delay_graph_path = None
             else:
                 tput_graph = cc + '_%s_throughput_run%s.png' % (link_t, run_id)
-                tput_graph_path = path.join(self.data_dir, tput_graph)
+                tput_graph_path = path.join(self.data_dir, cc, tput_graph)
 
                 delay_graph = cc + '_%s_delay_run%s.png' % (link_t, run_id)
-                delay_graph_path = path.join(self.data_dir, delay_graph)
+                delay_graph_path = path.join(self.data_dir, cc, delay_graph)
 
             sys.stderr.write('$ tunnel_graph %s\n' % log_path)
             try:
@@ -130,7 +130,7 @@ class Plot(object):
 
     def update_stats_log(self, cc, run_id, stats):
         stats_log_path = path.join(
-            self.data_dir, '%s_stats_run%s.log' % (cc, run_id))
+            self.data_dir, cc, '%s_stats_run%s.log' % (cc, run_id))
 
         if not path.isfile(stats_log_path):
             sys.stderr.write('Warning: %s does not exist\n' % stats_log_path)
@@ -289,22 +289,22 @@ class Plot(object):
             ax.set_ylabel('Average throughput (Mbit/s)', fontsize=12)
             ax.grid()
 
-        # save pantheon_summary.svg and .pdf
+        # save pantheon_summary.svg and .png
         ax_raw.set_title(self.expt_title.strip(), y=1.02, fontsize=12)
         lgd = ax_raw.legend(scatterpoints=1, bbox_to_anchor=(1, 0.5),
                             loc='center left', fontsize=12)
 
-        for graph_format in ['svg', 'pdf']:
+        for graph_format in ['png']:
             raw_summary = path.join(
                 self.data_dir, 'pantheon_summary.%s' % graph_format)
             fig_raw.savefig(raw_summary, dpi=300, bbox_extra_artists=(lgd,),
                             bbox_inches='tight', pad_inches=0.2)
 
-        # save pantheon_summary_mean.svg and .pdf
+        # save pantheon_summary_mean.svg and .png
         ax_mean.set_title(self.expt_title +
                           ' (mean of all runs by scheme)', fontsize=12)
 
-        for graph_format in ['svg', 'pdf']:
+        for graph_format in ['png']:
             mean_summary = path.join(
                 self.data_dir, 'pantheon_summary_mean.%s' % graph_format)
             fig_mean.savefig(mean_summary, dpi=300,
@@ -345,7 +345,8 @@ class Plot(object):
 
         perf_path = path.join(self.data_dir, 'pantheon_perf.json')
         with open(perf_path, 'w') as fh:
-            json.dump(data_for_json, fh)
+            json.dump(data_for_json, fh, indent=4,
+                  separators=(',', ': '))
 
 
 def main():
