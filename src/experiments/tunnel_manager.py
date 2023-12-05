@@ -15,6 +15,7 @@ def main():
     procs = {}
 
     # register SIGINT and SIGTERM events to clean up gracefully before quit
+    '''
     def stop_signal_handler(signum, frame):
         for tun_id in procs:
             utils.kill_proc_group(procs[tun_id])
@@ -23,7 +24,7 @@ def main():
 
     signal.signal(signal.SIGINT, stop_signal_handler)
     signal.signal(signal.SIGTERM, stop_signal_handler)
-
+    '''
     sys.stdout.write('tunnel manager is running\n')
     sys.stdout.flush()
 
@@ -103,10 +104,8 @@ def main():
                 sys.stderr.write('error: usage: halt\n')
                 continue
 
-            for tun_id in procs:
-                utils.kill_proc_group(procs[tun_id])
-
-            sys.exit(0)
+            utils.kill_proc_group(os.getpgid(os.getpid()))
+            #sys.exit(0)
         else:
             sys.stderr.write('unknown command: %s\n' % input_cmd)
             continue
