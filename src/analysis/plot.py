@@ -294,7 +294,7 @@ class Plot(object):
         lgd = ax_raw.legend(scatterpoints=1, bbox_to_anchor=(1, 0.5),
                             loc='center left', fontsize=12)
 
-        for graph_format in ['svg', 'pdf']:
+        for graph_format in ['png']:
             raw_summary = path.join(
                 self.data_dir, 'pantheon_summary.%s' % graph_format)
             fig_raw.savefig(raw_summary, dpi=300, bbox_extra_artists=(lgd,),
@@ -304,7 +304,7 @@ class Plot(object):
         ax_mean.set_title(self.expt_title +
                           ' (mean of all runs by scheme)', fontsize=12)
 
-        for graph_format in ['svg', 'pdf']:
+        for graph_format in ['png']:
             mean_summary = path.join(
                 self.data_dir, 'pantheon_summary_mean.%s' % graph_format)
             fig_mean.savefig(mean_summary, dpi=300,
@@ -345,8 +345,8 @@ class Plot(object):
 
         perf_path = path.join(self.data_dir, 'pantheon_perf.json')
         with open(perf_path, 'w') as fh:
-            json.dump(data_for_json, fh)
-
+            json.dump(data_for_json, fh, indent=4,
+                  separators=(',', ': '))
 
 def main():
     args = arg_parser.parse_plot()

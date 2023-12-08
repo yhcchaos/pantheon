@@ -268,7 +268,8 @@ class TunnelGraph(object):
             self.total_avg_egress = 0
         else:
             self.total_duration = total_last_departure - total_first_departure
-          
+            self.total_avg_egress = total_departures / (
+                self.total_duration)
         self.total_avg_ingress = None
         if total_first_arrival == total_last_arrival:
             self.total_in_duration = 0
@@ -296,7 +297,6 @@ class TunnelGraph(object):
             empty_graph = False
             ax.fill_between(self.link_capacity_t, 0, self.link_capacity,
                             facecolor='linen')
-
         colors = ['b', 'g', 'r', 'y', 'c', 'm']
         color_i = 0
         for flow_id in self.flows:
@@ -322,7 +322,6 @@ class TunnelGraph(object):
         if empty_graph:
             sys.stderr.write('No valid throughput graph is generated\n')
             return
-        
         #ax.set_xlabel('Time (s)', fontsize=15)
         #ax.set_ylabel('Throughput (Mbit/s)', fontsize=15)
         ax.tick_params(axis='both', which='major', labelsize=20)
@@ -331,7 +330,6 @@ class TunnelGraph(object):
         #if self.link_capacity and self.avg_capacity:
             #ax.set_title('Average capacity %.2f Mbit/s (shaded region)'
             #             % self.avg_capacity)
-
         ax.grid()
         handles, labels = ax.get_legend_handles_labels()
         handles.append(ax.scatter([0], [0], color='white', label='sumi(%.2f)' % sum(self.avg_ingress.values())))
@@ -345,7 +343,6 @@ class TunnelGraph(object):
                         loc='upper center', ncol=6, fontsize=20,
                         labelspacing=0, columnspacing=0.3, 
                         handlelength=1, handletextpad=0)
-
         fig.set_size_inches(12, 6)
         fig.savefig(self.throughput_graph, bbox_extra_artists=(lgd,),
                     bbox_inches='tight')
@@ -451,7 +448,6 @@ class TunnelGraph(object):
 
     def run(self):
         self.parse_tunnel_log()
-
         if self.throughput_graph:
             self.plot_throughput_graph()
 
