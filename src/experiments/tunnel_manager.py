@@ -104,8 +104,14 @@ def main():
                 sys.stderr.write('error: usage: halt\n')
                 continue
 
-            utils.kill_proc_group(os.getpgid(os.getpid()))
-            #sys.exit(0)
+            os.killpg(os.getpgid(os.getpid()), signal.SIGTERM)
+            sys.exit(0)
+            '''
+            for tun_id in procs:
+                utils.kill_proc_group(procs[tun_id])
+
+            sys.exit(0)
+            '''
         else:
             sys.stderr.write('unknown command: %s\n' % input_cmd)
             continue
