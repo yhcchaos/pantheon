@@ -336,8 +336,8 @@ class TunnelGraph(object):
         lgd = ax.legend(self.flip(handles, 6), self.flip(labels, 6),
                         scatterpoints=1, bbox_to_anchor=(0.5, -0.05),
                         loc='upper center', ncol=6, fontsize=20,
-                        labelspacing=0, columnspacing=0.3, 
-                        handlelength=1, handletextpad=0)
+                        labelspacing=0, columnspacing=0.2, 
+                        handlelength=0.5, handletextpad=0)
 
         fig.set_size_inches(12, 6)
         fig.savefig(self.throughput_graph, bbox_extra_artists=(lgd,),
@@ -376,24 +376,20 @@ class TunnelGraph(object):
         ax.annotate('(s)', (5, 0), textcoords="offset points", xytext=(0, -10), ha='center', color='r')
         ax.annotate('(95p-oneway-ms)', (0, 1.5), textcoords="offset points", xytext=(-30, 0), ha='center', color='r')
         ax.grid()
-        handles_95p, labels_95p = ax.get_legend_handles_labels()
-        handles_avg = []
-        labels_avg = []
+        handles, labels = ax.get_legend_handles_labels()
         for flow_id in self.flows:
-            handles_avg.append(plt.Line2D([0], [0], color='white', label='a%s(%.2f)' % (flow_id, self.avg_delay.get(flow_id, 0))))
-            labels_avg.append('a%s(%.2f)' % (flow_id, self.avg_delay.get(flow_id, 0)))
-        handles = []
-        labels = []
-        for i in range(len(handles_95p)):
-            handles.append(handles_95p[i])
-            handles.append(handles_avg[i])
-            labels.append(labels_95p[i])
-            labels.append(labels_avg[i])
+            handles.append(plt.Line2D([0], [0], color='white', label='a%s(%.2f)' % (flow_id, self.avg_delay.get(flow_id, 0))))
+            labels.append('a%s(%.2f)' % (flow_id, self.avg_delay.get(flow_id, 0)))
+        for flow_id in self.flows:
+            handles.append(plt.Line2D([0], [0], color='white', label='l%s(%.6f)' % (flow_id, self.loss_rate.get(flow_id, 0))))
+            labels.append('l%s(%.6f)' % (flow_id, self.loss_rate.get(flow_id, 0)))
+        handles.append(plt.Line2D([0], [0], color='white', label='la(%.6f)' % (self.total_loss_rate)))
+        labels.append('la%s(%.6f)' % (flow_id, self.total_loss_rate))
         lgd = ax.legend(self.flip(handles, 6), self.flip(labels, 6),
                         scatterpoints=1, bbox_to_anchor=(0.5, -0.05),
                         loc='upper center', ncol=6, fontsize=20,
-                        markerscale=5, labelspacing=0, columnspacing=0.3, 
-                        handlelength=1, handletextpad=0)
+                        markerscale=5, labelspacing=0, columnspacing=0, 
+                        handlelength=0, handletextpad=0)
         fig.set_size_inches(12, 6)
         fig.savefig(self.delay_graph, bbox_extra_artists=(lgd,),
                     bbox_inches='tight')
