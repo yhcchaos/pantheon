@@ -15,6 +15,48 @@ schemes:
     name: LEDBAT
     color: green
     marker: '<'
+  ##
+  westwood: 
+    name: LEDBAT
+    color: green
+    marker: '<'
+  yeah: 
+    name: LEDBAT
+    color: green
+    marker: '<'
+  reno: 
+    name: LEDBAT
+    color: green
+    marker: '<'
+  illinois: 
+    name: LEDBAT
+    color: green
+    marker: '<'
+  veno: 
+    name: LEDBAT
+    color: green
+    marker: '<'
+  highspeed: 
+    name: LEDBAT
+    color: green
+    marker: '<'
+  cdg: 
+    name: LEDBAT
+    color: green
+    marker: '<'
+  htcp: 
+    name: LEDBAT
+    color: green
+    marker: '<'
+  bic: 
+    name: LEDBAT
+    color: green
+    marker: '<'
+  hybla:
+    name: LEDBAT
+    color: green
+    marker: '<'
+  ##
   pcc:
     name: PCC-Allegro
     color: cyan

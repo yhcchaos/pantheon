@@ -14,9 +14,13 @@ def setup_bbr():
     # add bbr to kernel-allowed congestion control list
     kernel_ctl.enable_congestion_control('bbr')
 
+    # check if qdisc is fq
+    kernel_ctl.check_qdisc('fq')
+
 
 def main():
     args = arg_parser.receiver_first()
+
     if args.option == 'deps':
         print('iperf')
         return
@@ -31,7 +35,7 @@ def main():
         return
 
     if args.option == 'sender':
-        cmd = ['iperf3', '-C', 'bbr', '-c', args.ip, '-p', args.port, "-t", "7500"]
+        cmd = ['iperf3', '-C', 'bbr', '-c', args.ip, '-p', args.port]
         check_call(cmd)
         return
 

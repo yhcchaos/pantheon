@@ -1,11 +1,11 @@
 import sys
-
+import logging
 from helpers.subprocess_wrappers import call, check_output, check_call
 
 
 def load_kernel_module(module):
-    if call('sudo modprobe ' + module, shell=True) != 0:
-        sys.exit('%s kernel module is not available' % module)
+    if call('sudo modprobe -a ' + module, shell=True) != 0:
+        logging.error('%s kernel module is not available' % module)
 
 
 def enable_congestion_control(cc):

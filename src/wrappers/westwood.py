@@ -5,33 +5,35 @@ from subprocess import check_call
 import arg_parser
 import context
 from helpers import kernel_ctl
+import logging
+def setup_westwood():
+    # load tcp_ kernel module (only available since Linux Kernel 4.9)
+    kernel_ctl.load_kernel_module('tcp_westwood')
 
-
-def setup_bbr():
-    # load tcp_bbr kernel module (only available since Linux Kernel 4.9)
-    kernel_ctl.load_kernel_module('tcp_bbr')
-
-    # add bbr to kernel-allowed congestion control list
-    kernel_ctl.enable_congestion_control('bbr')
+    # add westwood to kernel-allowed congestion control list
+    kernel_ctl.enable_congestion_control('westwood')
 
 
 def main():
     args = arg_parser.receiver_first()
     if args.option == 'deps':
-        print('iperf')
+        print(iperf)
         return
 
     if args.option == 'setup_after_reboot':
-        setup_bbr()
+        setup_westwood()
         return
 
     if args.option == 'receiver':
         cmd = ['iperf3', '-s', '-p', args.port]
+        logging.error(cmd)
         check_call(cmd)
         return
 
     if args.option == 'sender':
-        cmd = ['iperf3', '-C', 'bbr', '-c', args.ip, '-p', args.port, "-t", "7500"]
+        cmd = ['iperf3', '-C', 'westwood', '-c', args.ip, '-p', args.port,
+               '-t', '7500']
+        logging.error(cmd)
         check_call(cmd)
         return
 
