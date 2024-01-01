@@ -1,0 +1,7 @@
+# Describe one test. Test must have a name and describe what scheme each flow should use.
+test-name: mvfst_rl-2cubic
+flows:
+  - scheme: mvfst_rl
+  - scheme: cubic
+  - scheme: cubic
+  

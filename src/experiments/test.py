@@ -32,7 +32,8 @@ class Test(object):
         #   * `cc` is the full version including parameters
         #   * `cc_base` is the base scheme name only
         self.cc = cc
-        self.cc_base = utils.get_base_scheme(cc)
+        if cc!=None:
+            self.cc_base = utils.get_base_scheme(cc)
         self.do_log = args.do_log
         self.data_dir = path.abspath(args.data_dir)
         self.extra_sender_args = args.extra_sender_args
@@ -511,11 +512,11 @@ class Test(object):
 
                 port = utils.get_open_port()
 
-                first_cmd = 'tunnel %s python %s sender %s\n' % (
-                    tun_id, first_src, port)
+                first_cmd = 'tunnel %s python %s sender %s --extra_args=%s\n' % (
+                    tun_id, first_src, port, extra_args)
                 second_cmd = 'tunnel %s python %s receiver %s %s\n' % (
                     tun_id, second_src, send_pri_ip, port)
-
+                
                 send_manager.stdin.write(first_cmd)
                 send_manager.stdin.flush()
 
@@ -541,7 +542,7 @@ class Test(object):
                 recv_manager.stdin.flush()
             else:
                 assert(hasattr(self, 'flow_objs'))
-                flow = self.flow_objs[i]
+                flow = self.flow_objs[i+1]
                 if flow.run_first == 'receiver':
                     send_manager.stdin.write(second_cmd)
                     send_manager.stdin.flush()
@@ -808,7 +809,7 @@ def run_tests(args):
 
     # save metadata
     meta = vars(args).copy()
-    meta['cc_schemes'] = sorted(cc_schemes)
+    meta['cc_schemes'] = cc_schemes
     meta['git_summary'] = git_summary
 
     metadata_path = path.join(args.data_dir, 'pantheon_metadata.json')
@@ -826,6 +827,9 @@ def run_tests(args):
                 test_args = get_cc_args(args, params)
                 Test(test_args, run_id, cc).run()
         else:
+            args.data_dir = os.path.join(root_data_dir, args.test_config['test-name'])
+            if not os.path.exists(args.data_dir):
+                os.makedirs(args.data_dir)
             Test(args, run_id, None).run()
 
 

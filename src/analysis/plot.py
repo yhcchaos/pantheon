@@ -26,7 +26,7 @@ class Plot(object):
         metadata_path = path.join(self.data_dir, 'pantheon_metadata.json')
         meta = utils.load_test_metadata(metadata_path)
         self.cc_schemes = utils.verify_schemes_with_meta(args.schemes, meta)
-
+        self.test_config = None if "test_config" not in meta else meta['test_config']
         self.run_times = meta['run_times']
         self.flows = meta['flows']
         self.runtime = meta['runtime']
@@ -160,38 +160,60 @@ class Plot(object):
     def eval_performance(self):
         perf_data = {}
         stats = {}
+        if self.test_config == None:
+            for cc in self.cc_schemes:
+                perf_data[cc] = {}
+                stats[cc] = {}
 
-        for cc in self.cc_schemes:
-            perf_data[cc] = {}
-            stats[cc] = {}
+            cc_id = 0
+            run_id = 1
+            pool = ThreadPool(processes=multiprocessing.cpu_count())
 
-        cc_id = 0
-        run_id = 1
-        pool = ThreadPool(processes=multiprocessing.cpu_count())
+            while cc_id < len(self.cc_schemes):
+                cc = self.cc_schemes[cc_id]
+                perf_data[cc][run_id] = pool.apply_async(
+                    self.parse_tunnel_log, args=(cc, run_id))
 
-        while cc_id < len(self.cc_schemes):
-            cc = self.cc_schemes[cc_id]
-            perf_data[cc][run_id] = pool.apply_async(
-                self.parse_tunnel_log, args=(cc, run_id))
+                run_id += 1
+                if run_id > self.run_times:
+                    run_id = 1
+                    cc_id += 1
 
-            run_id += 1
-            if run_id > self.run_times:
-                run_id = 1
-                cc_id += 1
+            for cc in self.cc_schemes:
+                for run_id in xrange(1, 1 + self.run_times):
+                    perf_data[cc][run_id] = perf_data[cc][run_id].get()
 
-        for cc in self.cc_schemes:
+                    if perf_data[cc][run_id] is None:
+                        continue
+
+                    stats_str = perf_data[cc][run_id]['stats']
+                    self.update_stats_log(cc, run_id, stats_str)
+                    stats[cc][run_id] = stats_str
+
+            sys.stderr.write('Appended datalink statistics to stats files in %s\n'
+                            % self.data_dir)
+        else:
+            test_name = self.test_config['test-name']
+            perf_data[test_name] = {}
+            stats[test_name] = {}
+
+            pool = ThreadPool(processes=multiprocessing.cpu_count())
+            for run_id in range(1, self.run_times + 1):
+                perf_data[test_name][run_id] = pool.apply_async(
+                    self.parse_tunnel_log, args=(test_name, run_id))
+
             for run_id in xrange(1, 1 + self.run_times):
-                perf_data[cc][run_id] = perf_data[cc][run_id].get()
+                perf_data[test_name][run_id] = perf_data[test_name][run_id].get()
 
-                if perf_data[cc][run_id] is None:
+                if perf_data[test_name][run_id] is None:
                     continue
 
-                stats_str = perf_data[cc][run_id]['stats']
-                self.update_stats_log(cc, run_id, stats_str)
-                stats[cc][run_id] = stats_str
+                stats_str = perf_data[test_name][run_id]['stats']
+                self.update_stats_log(test_name, run_id, stats_str)
+                stats[test_name][run_id] = stats_str
 
-        sys.stderr.write('Appended datalink statistics to stats files in %s\n'
-                         % self.data_dir)
+            sys.stderr.write('Appended datalink statistics to stats files in %s\n'
+                            % self.data_dir)
 
         return perf_data, stats
 
@@ -246,8 +268,12 @@ class Plot(object):
                 continue
 
             value = data[cc]
-            cc_name = utils.get_scheme_name(cc, schemes_config)
-            cc_base = utils.get_base_scheme(cc)
+            if self.test_config == None:
+                cc_name = utils.get_scheme_name(cc, schemes_config)
+                cc_base = utils.get_base_scheme(cc)
+            else:
+                cc_name = self.test_config['test-name']
+                cc_base = self.test_config['test-name'].split('-')[0]
             color = schemes_config[cc_base]['color']
             marker = schemes_config[cc_base]['marker']
             y_data, x_data = zip(*value)
