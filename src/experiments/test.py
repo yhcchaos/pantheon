@@ -809,7 +809,7 @@ def run_tests(args):
 
     # save metadata
     meta = vars(args).copy()
-    meta['cc_schemes'] = cc_schemes
+    meta['cc_schemes'] = sorted(cc_schemes)
     meta['git_summary'] = git_summary
 
     metadata_path = path.join(args.data_dir, 'pantheon_metadata.json')
