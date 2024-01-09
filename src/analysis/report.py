@@ -1,10 +1,9 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 
 import sys
 import os
 from os import path
 import re
-import shutil
 import uuid
 import numpy as np
 
@@ -152,7 +151,7 @@ class Report(object):
             table += (
                 '%(name)s & %(valid_runs)s & %(flow_tputs)s & '
                 '%(flow_delays)s & %(flow_losses)s \\\\\n'
-            ) % {'name': data[cc]['name'].replace('{', '\\{').replace('}', '\\}'),
+            ) % {'name': data[cc]['name'],
                  'valid_runs': data[cc]['valid_runs'],
                  'flow_tputs': ' & '.join(flow_data['tput']),
                  'flow_delays': ' & '.join(flow_data['delay']),
@@ -177,7 +176,7 @@ class Report(object):
             data[cc] = {}
             data[cc]['valid_runs'] = 0
 
-            cc_name = utils.get_scheme_name(cc, self.config['schemes'])
+            cc_name = self.config['schemes'][cc]['name']
             cc_name = cc_name.strip().replace('_', '\\_')
             data[cc]['name'] = cc_name
 
@@ -267,7 +266,7 @@ class Report(object):
         cc_id = 0
         for cc in self.cc_schemes:
             cc_id += 1
-            cc_name = utils.get_scheme_name(cc, self.config['schemes'])
+            cc_name = self.config['schemes'][cc]['name']
             cc_name = cc_name.strip().replace('_', '\\_')
 
             for run_id in xrange(1, 1 + self.run_times):
@@ -330,7 +329,7 @@ class Report(object):
 
         pdf_src_path = path.join(utils.tmp_dir, 'pantheon_report_%s.pdf' % report_uid)
         pdf_dst_path = path.join(self.data_dir, 'pantheon_report.pdf')
-        shutil.move(pdf_src_path, pdf_dst_path)
+        os.rename(pdf_src_path, pdf_dst_path)
 
         sys.stderr.write(
             'Saved pantheon_report.pdf in %s\n' % self.data_dir)

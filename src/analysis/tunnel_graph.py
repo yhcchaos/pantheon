@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 
 from os import path
 import sys
@@ -7,7 +7,7 @@ import itertools
 import numpy as np
 import matplotlib_agg
 import matplotlib.pyplot as plt
-import logging
+
 import arg_parser
 
 

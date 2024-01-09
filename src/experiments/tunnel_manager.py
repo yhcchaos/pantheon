@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 
 import os
 from os import path
@@ -15,7 +15,6 @@ def main():
     procs = {}
 
     # register SIGINT and SIGTERM events to clean up gracefully before quit
-    '''
     def stop_signal_handler(signum, frame):
         for tun_id in procs:
             utils.kill_proc_group(procs[tun_id])
@@ -24,7 +23,7 @@ def main():
 
     signal.signal(signal.SIGINT, stop_signal_handler)
     signal.signal(signal.SIGTERM, stop_signal_handler)
-    '''
+
     sys.stdout.write('tunnel manager is running\n')
     sys.stdout.flush()
 
@@ -69,9 +68,8 @@ def main():
                         cmd_to_run[i] = t[0] + '=' + path.expanduser(t[1])
 
                 procs[tun_id] = Popen(cmd_to_run, stdin=PIPE,
-#                                     stdout=PIPE, preexec_fn=os.setsid)
-                                      stdout=PIPE)
-            elif cmd[2] == 'python':  # run python scripts inside tunnel
+                                      stdout=PIPE, preexec_fn=os.setsid)
+            elif cmd[2] == 'python2':  # run python2 scripts inside tunnel
                 if tun_id not in procs:
                     sys.stderr.write(
                         'error: run tunnel client or server first\n')
@@ -104,14 +102,10 @@ def main():
                 sys.stderr.write('error: usage: halt\n')
                 continue
 
-            os.killpg(os.getpgid(os.getpid()), signal.SIGTERM)
-            sys.exit(0)
-            '''
             for tun_id in procs:
                 utils.kill_proc_group(procs[tun_id])
 
             sys.exit(0)
-            '''
         else:
             sys.stderr.write('unknown command: %s\n' % input_cmd)
             continue
