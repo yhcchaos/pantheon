@@ -39,7 +39,7 @@ class Test(object):
         self.runtime = args.runtime
         self.interval = args.interval
         self.run_times = args.run_times
-
+        self.first_time=0
         # used for cleanup
         self.proc_first = None
         self.proc_second = None
@@ -203,7 +203,7 @@ class Test(object):
             self.run_second = None
 
         # wait for 3 seconds until run_first is ready
-        self.run_first_setup_time = 3
+        self.run_first_setup_time = 5
 
         # setup output logs
         self.datalink_name = self.cc + '_datalink_run%d' % self.run_id
@@ -302,10 +302,12 @@ class Test(object):
             tc_manager_cmd = self.mm_cmd + ['python2', self.tunnel_manager]
 
         sys.stderr.write('[tunnel client manager (tcm)] ')
+        self.first_time=time.time()
+        time1 = time.time()
         self.tc_manager = Popen(tc_manager_cmd, stdin=PIPE, stdout=PIPE,
                                 preexec_fn=os.setsid)
         tc_manager = self.tc_manager
-
+        
         while True:
             running = tc_manager.stdout.readline()
             if 'tunnel manager is running' in running:
@@ -315,7 +317,7 @@ class Test(object):
                 sys.stderr.write('WARNING: tunnel client manager terminated '
                                  'unexpectedly\n')
                 return ts_manager, None
-
+        sys.stderr.write('actor-{}, episode-{}, tc_manager setup time is {}\n'.format(self.actor_id, self.episode_id, time.time()-time1))
         tc_manager.stdin.write('prompt [tcm]\n')
         tc_manager.stdin.flush()
 
@@ -515,7 +517,7 @@ class Test(object):
 
     def run_second_side(self, send_manager, recv_manager, second_cmds):
         time.sleep(self.run_first_setup_time)
-
+        sys.stderr.write('actor-{}, episode-{}, tunnel setup time is {}\n'.format(self.actor_id, self.episode_id, time.time()-self.first_time))
         start_time = time.time()
         self.test_start_time = utils.utc_time()
 
@@ -802,21 +804,14 @@ def run_tests(args):
 
     metadata_path = path.join(args.data_dir, 'pantheon_metadata.json')
     utils.save_test_metadata(meta, metadata_path)
-    root_data_dir = args.data_dir
     # run tests
     for run_id in xrange(args.start_run_id,
                          args.start_run_id + args.run_times):
         if not hasattr(args, 'test_config') or args.test_config is None:
             for cc in cc_schemes:
-                args.data_dir = os.path.join(root_data_dir, cc)
-                if not os.path.exists(args.data_dir):
-                    os.makedirs(args.data_dir)
                 # give this run and cc specific param to build link and run server and client
                 Test(args, run_id, cc).run()
         else:
-            args.data_dir = os.path.join(root_data_dir, args.test_config['test-name'])
-            if not os.path.exists(args.data_dir):
-                os.makedirs(args.data_dir)
             Test(args, run_id, None).run()
 
 

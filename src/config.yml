@@ -110,15 +110,15 @@ schemes:
     color: violet
     marker: 'D'
   mvfst_rl:
-    name: mvfst-rl
+    name: mvfst_rl
     color: chocolate
     marker: 'P'
   mvfst_rl_fixed:
-    name: mvfst-rl-fixed
+    name: mvfst_rl-fixed
     color: chartreuse
     marker: '2'
   mvfst_rl_random:
-    name: mvfst-rl-random
+    name: mvfst_rl-random
     color: rosybrown
     marker: 's'
   mvfst_bbr:

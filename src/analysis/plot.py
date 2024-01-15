@@ -80,7 +80,7 @@ class Plot(object):
 
         for link_t in link_directions:
             log_name = log_prefix + '_%s_run%s.log' % (link_t, run_id)
-            log_path = path.join(self.data_dir, cc, log_name)
+            log_path = path.join(self.data_dir, log_name)
 
             if not path.isfile(log_path):
                 sys.stderr.write('Warning: %s does not exist\n' % log_path)
@@ -92,10 +92,10 @@ class Plot(object):
                 delay_graph_path = None
             else:
                 tput_graph = cc + '_%s_throughput_run%s.png' % (link_t, run_id)
-                tput_graph_path = path.join(self.data_dir, cc, tput_graph)
+                tput_graph_path = path.join(self.data_dir, tput_graph)
 
                 delay_graph = cc + '_%s_delay_run%s.png' % (link_t, run_id)
-                delay_graph_path = path.join(self.data_dir, cc, delay_graph)
+                delay_graph_path = path.join(self.data_dir, delay_graph)
 
             sys.stderr.write('$ tunnel_graph %s\n' % log_path)
             try:
@@ -130,7 +130,7 @@ class Plot(object):
 
     def update_stats_log(self, cc, run_id, stats):
         stats_log_path = path.join(
-            self.data_dir, cc, '%s_stats_run%s.log' % (cc, run_id))
+            self.data_dir, '%s_stats_run%s.log' % (cc, run_id))
 
         if not path.isfile(stats_log_path):
             sys.stderr.write('Warning: %s does not exist\n' % stats_log_path)
@@ -269,13 +269,11 @@ class Plot(object):
 
             value = data[cc]
             if self.test_config == None:
-                cc_name = utils.get_scheme_name(cc, schemes_config)
-                cc_base = utils.get_base_scheme(cc)
+                cc_name = schemes_config[cc]['name']
             else:
                 cc_name = self.test_config['test-name']
-                cc_base = self.test_config['test-name'].split('-')[0]
-            color = schemes_config[cc_base]['color']
-            marker = schemes_config[cc_base]['marker']
+            color = schemes_config[cc_name]['color']
+            marker = schemes_config[cc_name]['marker']
             y_data, x_data = zip(*value)
 
             # update min and max raw delay

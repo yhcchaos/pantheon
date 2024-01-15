@@ -8,7 +8,7 @@ import string
 import shutil
 import time
 from subprocess import check_call, call, Popen, PIPE
-
+import logging
 import arg_parser
 import context
 from helpers import utils
@@ -97,6 +97,7 @@ def main():
             '--port=%s' % args.port,
             '--cc_algo=rl',
         ] + cc_env_args
+        logging.error(" ".join(cmd))
         check_call(cmd)
         return
 
@@ -111,6 +112,7 @@ def main():
             '--port=%s' % args.port,
             '--cc_algo=cubic',
         ]
+        logging.error(" ".join(cmd))
         check_call(cmd)
         return
 
