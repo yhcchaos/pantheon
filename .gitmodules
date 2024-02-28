@@ -52,5 +52,5 @@
 	ignore = dirty
 [submodule "third_party/pantheon_tunnel"]
 	path = third_party/pantheon_tunnel
-	url = git@github.com:yhcchaos/pantheon_tunnel.git
+	url = https://github.com/yhcchaos/pantheon_tunnel.git
 	ignore = dirty
