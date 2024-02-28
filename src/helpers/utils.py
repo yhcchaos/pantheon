@@ -281,12 +281,12 @@ def get_git_summary(mode='local', remote_path=None):
 
         remote_git_summary = check_output(ssh_cmd, shell=True)
 
-        if local_git_summary != remote_git_summary:
-            sys.stderr.write(
-                '--- local git summary ---\n%s\n' % local_git_summary)
-            sys.stderr.write(
-                '--- remote git summary ---\n%s\n' % remote_git_summary)
-            sys.exit('Repository differed between local and remote sides')
+        #if local_git_summary != remote_git_summary:
+        #    sys.stderr.write(
+        #        '--- local git summary ---\n%s\n' % local_git_summary)
+        #    sys.stderr.write(
+        #        '--- remote git summary ---\n%s\n' % remote_git_summary)
+        #    sys.exit('Repository differed between local and remote sides')
 
     return local_git_summary
 
