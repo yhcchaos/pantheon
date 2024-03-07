@@ -60,7 +60,7 @@ def main():
             if cmd[2] == 'mm-tunnelclient' or cmd[2] == 'mm-tunnelserver':
                 # expand env variables (e.g., MAHIMAHI_BASE)
                 cmd_to_run = path.expandvars(cmd_to_run).split()
-
+                sys.stderr.write(cmd_to_run)
                 # expand home directory
                 for i in xrange(len(cmd_to_run)):
                     if ('--ingress-log' in cmd_to_run[i] or

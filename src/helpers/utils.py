@@ -212,11 +212,12 @@ def who_runs_first(cc):
 def parse_remote_path(remote_path, cc=None):
     ret = {}
 
-    ret['host_addr'], ret['base_dir'] = remote_path.rsplit(':', 1)
+    ret['host_addr'], ret['base_dir'], ret['conda_env'] = remote_path.split(':')
     ret['src_dir'] = path.join(ret['base_dir'], 'src')
     ret['tmp_dir'] = path.join(ret['base_dir'], 'tmp')
     ret['ip'] = ret['host_addr'].split('@')[-1]
     ret['ssh_cmd'] = ['ssh', ret['host_addr']]
+    ret['conda_cmd'] = ['conda', 'activate', ret['conda_env']]
     ret['tunnel_manager'] = path.join(
         ret['src_dir'], 'experiments', 'tunnel_manager.py')
 

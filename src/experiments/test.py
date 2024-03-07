@@ -274,8 +274,12 @@ class Test(object):
             if self.server_side == 'local':
                 ts_manager_cmd = ['python', self.tunnel_manager]
             else:
-                ts_manager_cmd = self.r['ssh_cmd'] + [
-                    'python', self.r['tunnel_manager']]
+                ssh_cmd = 'export PATH=/home/yhchaos/miniconda3/condabin:$PATH;conda init;conda activate %s; python2 %s' % (self.r['conda_env'], self.r['tunnel_manager'])
+                ts_manager_cmd = ' '.join(self.r['ssh_cmd']) + ' "%s"' % ssh_cmd
+                #ssh_cmd = 'cd %s; %s' % (r['base_dir'], git_summary_src)
+                #ssh_cmd = ' '.join(r['ssh_cmd']) + ' "%s"' % ssh_cmd
+                #ts_manager_cmd = self.r['ssh_cmd'] + [
+                #    'python2', self.r['tunnel_manager']]
         else:
             ts_manager_cmd = ['python', self.tunnel_manager]
 
@@ -300,8 +304,10 @@ class Test(object):
         # run tunnel client manager
         if self.mode == 'remote':
             if self.server_side == 'local':
-                tc_manager_cmd = self.r['ssh_cmd'] + [
-                    'python', self.r['tunnel_manager']]
+                ssh_cmd = 'export PATH=/home/yhchaos/miniconda3/condabin:$PATH;conda init;conda activate %s; python2 %s' % (self.r['conda_env'], self.r['tunnel_manager'])
+                tc_manager_cmd = ' '.join(self.r['ssh_cmd']) + ' "%s"' % ssh_cmd
+                #tc_manager_cmd = self.r['ssh_cmd'] + [
+                #    'python', self.r['tunnel_manager']]
             else:
                 tc_manager_cmd = ['python', self.tunnel_manager]
         else:
