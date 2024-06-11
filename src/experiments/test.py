@@ -134,10 +134,13 @@ class Test(object):
 
         if self.prepend_mm_cmds:
             self.mm_cmd += self.prepend_mm_cmds.split()
-
+        '''
         self.mm_cmd += [
             'mm-link', uplink_trace, downlink_trace, 
             '--actor_id='+str(self.actor_id), '--episode_id='+str(self.episode_id)]
+        '''
+        self.mm_cmd += [
+            'mm-link', uplink_trace, downlink_trace]
         if(self.do_log):
             self.mm_cmd += ['--uplink-log=' + uplink_log,
             '--downlink-log=' + downlink_log]
