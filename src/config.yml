@@ -11,6 +11,10 @@ schemes:
     name: TCP BBR
     color: gold
     marker: '^'
+  ycubic:
+    name: YCUBIC
+    color: green
+    marker: '<'
   ledbat:
     name: LEDBAT
     color: green

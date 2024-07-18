@@ -10,7 +10,7 @@ import numpy as np
 import matplotlib_agg
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
-
+import logging
 import arg_parser
 import tunnel_graph
 import context
@@ -26,7 +26,9 @@ class Plot(object):
         metadata_path = path.join(self.data_dir, 'pantheon_metadata.json')
         meta = utils.load_test_metadata(metadata_path)
         self.cc_schemes = utils.verify_schemes_with_meta(args.schemes, meta)
-
+        self.plot_name=None
+        if "test-name" in meta:
+            self.plot_name=meta["test-name"]
         self.run_times = meta['run_times']
         self.flows = meta['flows']
         self.runtime = meta['runtime']
@@ -80,8 +82,7 @@ class Plot(object):
 
         for link_t in link_directions:
             log_name = log_prefix + '_%s_run%s.log' % (link_t, run_id)
-            log_path = path.join(self.data_dir, cc, log_name)
-
+            log_path = path.join(self.data_dir, log_name)
             if not path.isfile(log_path):
                 sys.stderr.write('Warning: %s does not exist\n' % log_path)
                 error = True
@@ -92,10 +93,10 @@ class Plot(object):
                 delay_graph_path = None
             else:
                 tput_graph = cc + '_%s_throughput_run%s.png' % (link_t, run_id)
-                tput_graph_path = path.join(self.data_dir, cc, tput_graph)
+                tput_graph_path = path.join(self.data_dir, tput_graph)
 
                 delay_graph = cc + '_%s_delay_run%s.png' % (link_t, run_id)
-                delay_graph_path = path.join(self.data_dir, cc, delay_graph)
+                delay_graph_path = path.join(self.data_dir, delay_graph)
 
             sys.stderr.write('$ tunnel_graph %s\n' % log_path)
             try:
@@ -130,7 +131,7 @@ class Plot(object):
 
     def update_stats_log(self, cc, run_id, stats):
         stats_log_path = path.join(
-            self.data_dir, cc, '%s_stats_run%s.log' % (cc, run_id))
+            self.data_dir, '%s_stats_run%s.log' % (cc, run_id))
 
         if not path.isfile(stats_log_path):
             sys.stderr.write('Warning: %s does not exist\n' % stats_log_path)
@@ -160,39 +161,59 @@ class Plot(object):
     def eval_performance(self):
         perf_data = {}
         stats = {}
+        if self.plot_name==None:
+            for cc in self.cc_schemes:
+                perf_data[cc] = {}
+                stats[cc] = {}
 
-        for cc in self.cc_schemes:
-            perf_data[cc] = {}
-            stats[cc] = {}
+            cc_id = 0
+            run_id = 1
+            pool = ThreadPool(processes=multiprocessing.cpu_count())
 
-        cc_id = 0
-        run_id = 1
-        pool = ThreadPool(processes=multiprocessing.cpu_count())
+            while cc_id < len(self.cc_schemes):
+                cc = self.cc_schemes[cc_id]
+                perf_data[cc][run_id] = pool.apply_async(
+                    self.parse_tunnel_log, args=(cc, run_id))
 
-        while cc_id < len(self.cc_schemes):
-            cc = self.cc_schemes[cc_id]
-            perf_data[cc][run_id] = pool.apply_async(
-                self.parse_tunnel_log, args=(cc, run_id))
+                run_id += 1
+                if run_id > self.run_times:
+                    run_id = 1
+                    cc_id += 1
 
-            run_id += 1
-            if run_id > self.run_times:
-                run_id = 1
-                cc_id += 1
+            for cc in self.cc_schemes:
+                for run_id in xrange(1, 1 + self.run_times):
+                    perf_data[cc][run_id] = perf_data[cc][run_id].get()
 
-        for cc in self.cc_schemes:
+                    if perf_data[cc][run_id] is None:
+                        continue
+
+                    stats_str = perf_data[cc][run_id]['stats']
+                    self.update_stats_log(cc, run_id, stats_str)
+                    stats[cc][run_id] = stats_str
+
+            sys.stderr.write('Appended datalink statistics to stats files in %s\n'
+                            % self.data_dir)
+        else:
+            run_id = 1
+            pool = ThreadPool(processes=multiprocessing.cpu_count())
+            perf_data[self.plot_name]={}
+            stats[self.plot_name]={}
+            for run_id in xrange(1, 1+self.run_times):
+                perf_data[self.plot_name][run_id] = pool.apply_async(
+                    self.parse_tunnel_log, args=(self.plot_name, run_id))
+
             for run_id in xrange(1, 1 + self.run_times):
-                perf_data[cc][run_id] = perf_data[cc][run_id].get()
+                perf_data[self.plot_name][run_id] = perf_data[self.plot_name][run_id].get()
 
-                if perf_data[cc][run_id] is None:
+                if perf_data[self.plot_name][run_id] is None:
                     continue
 
-                stats_str = perf_data[cc][run_id]['stats']
-                self.update_stats_log(cc, run_id, stats_str)
-                stats[cc][run_id] = stats_str
+                stats_str = perf_data[self.plot_name][run_id]['stats']
+                self.update_stats_log(self.plot_name, run_id, stats_str)
+                stats[self.plot_name][run_id] = stats_str
 
-        sys.stderr.write('Appended datalink statistics to stats files in %s\n'
-                         % self.data_dir)
-
+            sys.stderr.write('Appended datalink statistics to stats files in %s\n'
+                            % self.data_dir)
         return perf_data, stats
 
     def xaxis_log_scale(self, ax, min_delay, max_delay):
@@ -246,8 +267,8 @@ class Plot(object):
                 continue
 
             value = data[cc]
-            cc_name = utils.get_scheme_name(cc, schemes_config)
-            cc_base = utils.get_base_scheme(cc)
+            cc_name = cc
+            cc_base = cc
             color = schemes_config[cc_base]['color']
             marker = schemes_config[cc_base]['marker']
             y_data, x_data = zip(*value)

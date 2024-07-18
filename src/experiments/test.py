@@ -12,6 +12,7 @@ import traceback
 from subprocess import PIPE
 from collections import namedtuple, OrderedDict
 import arg_parser
+import logging
 import context
 from helpers import utils, kernel_ctl
 from helpers.subprocess_wrappers import Popen, call
@@ -32,7 +33,7 @@ class Test(object):
         #   * `cc` is the full version including parameters
         #   * `cc_base` is the base scheme name only
         self.cc = cc
-        self.cc_base = utils.get_base_scheme(cc)
+        self.cc_base = cc
         self.do_log = args.do_log
         self.data_dir = path.abspath(args.data_dir)
         self.extra_sender_args = args.extra_sender_args
@@ -110,6 +111,7 @@ class Test(object):
                     run_first=run_first,
                     run_second=run_second)
                 tun_id += 1
+                # logging.error(self.flow_objs)
 
     def setup_mm_cmd(self):
         mm_datalink_log = self.cc + '_mm_datalink_run%d.log' % self.run_id
@@ -499,7 +501,7 @@ class Test(object):
                     tun_id, first_src, port)
                 second_cmd = 'tunnel %s python %s sender %s %s\n' % (
                     tun_id, second_src, recv_pri_ip, port)
-
+                
                 recv_manager.stdin.write(first_cmd)
                 recv_manager.stdin.flush()
             else:  # flow.run_first == 'sender'
@@ -510,9 +512,12 @@ class Test(object):
                         first_src = flow.cc_src_remote
 
                 port = utils.get_open_port()
-
-                first_cmd = 'tunnel %s python %s sender %s\n' % (
-                    tun_id, first_src, port)
+                if(extra_args):
+                    first_cmd = 'tunnel %s python %s sender %s --extra_args=%s\n' % (
+                        tun_id, first_src, port, extra_args)
+                else:
+                    first_cmd = 'tunnel %s python %s sender %s\n' % (
+                        tun_id, first_src, port)
                 second_cmd = 'tunnel %s python %s receiver %s %s\n' % (
                     tun_id, second_src, send_pri_ip, port)
 
@@ -522,8 +527,9 @@ class Test(object):
         return second_cmd
 
     def run_second_side(self, send_manager, recv_manager, second_cmds):
+        # logging.error(second_cmds)
         time.sleep(self.run_first_setup_time)
-
+        
         start_time = time.time()
         self.test_start_time = utils.utc_time()
 
@@ -541,7 +547,7 @@ class Test(object):
                 recv_manager.stdin.flush()
             else:
                 assert(hasattr(self, 'flow_objs'))
-                flow = self.flow_objs[i]
+                flow = self.flow_objs[i+1]
                 if flow.run_first == 'receiver':
                     send_manager.stdin.write(second_cmd)
                     send_manager.stdin.flush()
@@ -786,25 +792,25 @@ def run_tests(args):
                                         getattr(args, 'remote_path', None))
 
     # get cc_schemes
-    cc_schemes = OrderedDict()
+    cc_schemes = []
     if args.all:
         config = utils.parse_config()
         schemes_config = config['schemes']
 
         for scheme in schemes_config.keys():
-            cc_schemes[scheme] = {}
+            cc_schemes.append(scheme)
         if args.random_order:
-            utils.shuffle_keys(cc_schemes)
+            random.shuffle(cc_schemes)
     elif args.schemes is not None:
-        cc_schemes = utils.parse_schemes(args.schemes)
+        cc_schemes = args.schemes.split()
         if args.random_order:
-            utils.shuffle_keys(cc_schemes)
+            random.shuffle(cc_schemes)
     else:
         assert(args.test_config is not None)
         if args.random_order:
             random.shuffle(args.test_config['flows'])
         for flow in args.test_config['flows']:
-            cc_schemes[flow['scheme']] = {}
+            cc_schemes.append(flow['scheme'])
 
     # save metadata
     meta = vars(args).copy()
@@ -813,62 +819,15 @@ def run_tests(args):
 
     metadata_path = path.join(args.data_dir, 'pantheon_metadata.json')
     utils.save_test_metadata(meta, metadata_path)
-    root_data_dir = args.data_dir
     # run tests
     for run_id in xrange(args.start_run_id,
                          args.start_run_id + args.run_times):
         if not hasattr(args, 'test_config') or args.test_config is None:
-            for cc, params in cc_schemes.iteritems():
-                args.data_dir = os.path.join(root_data_dir, cc)
-                if not os.path.exists(args.data_dir):
-                    os.makedirs(args.data_dir)
+            for cc in cc_schemes:
                 # give this run and cc specific param to build link and run server and client
-                test_args = get_cc_args(args, params)
-                Test(test_args, run_id, cc).run()
+                Test(args, run_id, cc).run()
         else:
             Test(args, run_id, None).run()
-
-
-def get_cc_args(args, params):
-    """
-    Obtain experiment-specific arguments and original cc scheme name.
-
-    :param args: Original arguments
-    :param params: Dictionary holding this experiment's specific params as
-        strings, e.g. {"cc_env_fixed_cwnd": "100"}
-    :return: An updated version of `args` with overridden params' values
-        (`args` is *not* modified in-place: either we return it unchanged,
-        or a copy is made before any modification)
-    """
-    if params:
-        # Override default params with scheme-specific ones.
-        args = copy.deepcopy(args)
-        # param must either in args or in extra_sender_args
-        for param, val in params.iteritems():
-            if hasattr(args, param):
-                # This is a direct parameter to this script: we assume that we
-                # can use the type of the default setting value to cast the
-                # string `val` into the desired type.
-                cast_func = type(getattr(args, param))
-                setattr(args, param, cast_func(val))
-            else:
-                # This must be an indirect parameter passed through `--extra-sender-args`:
-                # modify this string to use the desired value instead of current one.
-                extra = args.extra_sender_args
-                pattern = '--{}='.format(param)
-                pattern_pos = extra.find(pattern)
-                assert pattern_pos >= 0, (
-                    'pattern not found in --extra-sender-args: {}'.format(pattern))
-                next_pos = extra.find(' ', pattern_pos)  # when next param starts
-                if next_pos == -1:  # will happen if `param` is the last parameter
-                    next_pos = len(extra)
-                # Build the new string of extra args.
-                args.extra_sender_args = ''.join([
-                    extra[0:pattern_pos + len(pattern)],  # up to param's value
-                    val,  # the new value of `param` (already a string)
-                    extra[next_pos:],  # after `param`
-                ])
-    return args
 
 
 def pkill(args):

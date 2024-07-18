@@ -2,13 +2,13 @@ from os import path
 import sys
 import yaml
 import argparse
+import logging
 
 import context
 from helpers import utils
 
 
 def verify_schemes(schemes):
-    schemes = map(utils.get_base_scheme, utils.parse_schemes(schemes))
     all_schemes = utils.parse_config()['schemes'].keys()
 
     for cc in schemes:
@@ -258,11 +258,12 @@ def parse_test():
 
     args = parser.parse_args(remaining_argv)
     if args.schemes is not None:
-        verify_schemes(args.schemes)
+        schemes = args.schemes.split()
+        verify_schemes(schemes)
         args.test_config = None
     elif not args.all:
         assert(test_config is not None)
-        schemes = ' '.join([flow['scheme'] for flow in test_config['flows']])
+        schemes = [flow['scheme'] for flow in test_config['flows']]
         verify_schemes(schemes)
 
     verify_test_args(args)

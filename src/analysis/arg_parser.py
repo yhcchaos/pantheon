@@ -90,7 +90,6 @@ def parse_analyze():
     parse_analyze_shared(parser)
     parser.add_argument('--include-acklink', action='store_true',
                         help='include acklink analysis')
-
     args = parser.parse_args()
     if args.schemes is not None:
         verify_schemes(args.schemes)

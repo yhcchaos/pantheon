@@ -43,94 +43,6 @@ def parse_config():
         return yaml.load(config)
 
 
-def parse_schemes(args_schemes):
-    """
-    Parse the list of schemes provided on the command line.
-
-    Each scheme may be associated to various settings provided as a list.
-    For instance, `args_schemes` may be the string
-        'bbr mvfst_rl mvfst_rl_fixed{cc_env_fixed_cwnd=10,100,1000}'
-    in which case the returned dictionary will be:
-        {
-            'bbr': {},
-            'mvfst_rl': {},
-            'mvfst_rl_fixed{10}': {'cc_env_fixed_cwnd': '10'},
-            'mvfst_rl_fixed{100}': {'cc_env_fixed_cwnd': '100'},
-            'mvfst_rl_fixed{1000}': {'cc_env_fixed_cwnd': '1000'},
-        }
-
-    Note that multiple settings may be varied, e.g. `arg_schemes` could be
-        'mvfst_rl_fixed{cc_env_fixed_cwnd=10,100;cc_env_reward_delay_factor=0,0.1}'
-    and this function would then return:
-        {
-            'mvfst_rl_fixed{10;0}': {'cc_env_fixed_cwnd': '10', 'cc_env_reward_delay_factor': '0'},
-            'mvfst_rl_fixed{10;0.1}': {'cc_env_fixed_cwnd': '10', 'cc_env_reward_delay_factor': '0.1'},
-            'mvfst_rl_fixed{100;0}': {'cc_env_fixed_cwnd': '100', 'cc_env_reward_delay_factor': '0'},
-            'mvfst_rl_fixed{100;0.1}': {'cc_env_fixed_cwnd': '100', 'cc_env_reward_delay_factor': '0.1'},
-        }
-
-    The returned dictionary is an `OrderedDict` so as to preserve the
-    original order.
-    """
-    schemes = OrderedDict()
-    for scheme in args_schemes.split():
-        if '{' not in scheme:
-            schemes[scheme] = {}  # simple case: no setting to override
-            continue
-        assert scheme.endswith('}'), scheme
-        settings_pos = scheme.index('{')
-        args_settings = scheme[settings_pos + 1 : -1]  # drop the {}
-        scheme_name = scheme[0:settings_pos]
-        setting_vals = OrderedDict()  # map a setting to the list of values it should take
-        for args_setting in args_settings.split(';'):
-            setting, values = args_setting.split('=', 1)
-            assert setting not in setting_vals, 'duplicate entry: {}'.format(setting)
-            setting_vals[setting] = values.split(',')
-        # Obtain all combinations of settings.
-        for combo in itertools.product(*setting_vals.values()):
-            # Format into something like: scheme{val1;val2;val3}
-            scheme_key = '{}{{{}}}'.format(scheme_name, ';'.join(combo))
-            schemes[scheme_key] = {
-                k: v for k, v in itertools.izip(setting_vals, combo)
-            }
-    return schemes
-
-
-def get_base_scheme(scheme):
-    """
-    Return the base scheme of a (potentially) parameterized scheme.
-
-    Ex:
-        * mvst_rl_fixed{10;100} -> mvfst_rl_fixed
-        * bbr -> bbr
-    """
-    return scheme.split("{", 1)[0]
-
-
-def get_scheme_name(scheme, schemes_config):
-    """
-    Return the name (for reporting purpose) of the desired scheme.
-
-    The config is used to obtain the base scheme's name, and potential
-    additional parameters are appended in the name{params} format.
-    """
-    cc_base = get_base_scheme(scheme)
-    cc_name = schemes_config[cc_base]['name']  # obtain base name
-    if len(scheme) > len(cc_base):
-        # Append parameters to the name, like: name{param1;param2}
-        cc_name = '{}{}'.format(cc_name, scheme[len(cc_base):])
-    return cc_name
-
-
-def shuffle_keys(the_dict):
-    """Shuffle in-place the keys of a given (ordered) dictionary"""
-    assert isinstance(the_dict, OrderedDict), 'why shuffle if not ordered?'
-    items = the_dict.items()
-    random.shuffle(items)
-    the_dict.clear()
-    for k, v in items:
-        the_dict[k] = v
-
 
 def update_submodules():
     cmd = 'git submodule update --init --recursive'
@@ -187,7 +99,7 @@ def verify_schemes_with_meta(schemes, meta):
         if cc not in all_schemes:
             sys.exit('%s is not a scheme included in '
                      'pantheon_metadata.json' % cc)
-        if get_base_scheme(cc) not in schemes_config:
+        if cc not in schemes_config:
             sys.exit('%s is not a scheme included in src/config.yml' % cc)
 
     return cc_schemes
